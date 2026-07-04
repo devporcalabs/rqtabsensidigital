@@ -376,9 +376,9 @@ include 'header.php';
                                         <i class="bi bi-wallet2"></i>
                                     </a>
 
-                                    <a href="daftar_wajah.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-light border text-info rounded-3" title="Rekam Wajah">
+                                    <!-- <a href="daftar_wajah.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-light border text-info rounded-3" title="Rekam Wajah">
                                         <i class="bi bi-person-bounding-box"></i>
-                                    </a>
+                                    </a> -->
 
                                     <div class="btn-group">
                                         <button type="button" class="btn btn-sm btn-light border text-dark rounded-3" data-bs-toggle="dropdown" title="Cetak Kartu">
