@@ -232,9 +232,15 @@ $tgl_indo = $daftar_hari[date('l')] . ', ' . date('d ') . $daftar_bulan[date('F'
 
         // --- CAMERA ---
         function loadCameras() {
+            const cameraList = document.getElementById('camera-list');
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                console.error("navigator.mediaDevices is undefined. Accessing camera requires a secure context (HTTPS or localhost).");
+                cameraList.innerHTML = '<option value="">Gunakan HTTPS / Localhost</option>';
+                return;
+            }
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length) {
-                    const cameraList = document.getElementById('camera-list');
+                    cameraList.innerHTML = ''; // Reset list
                     devices.forEach((device, index) => {
                         const option = document.createElement('option');
                         option.value = device.id;
@@ -243,7 +249,12 @@ $tgl_indo = $daftar_hari[date('l')] . ', ' . date('d ') . $daftar_bulan[date('F'
                     });
                     startCamera(devices[0].id);
                     cameraList.addEventListener('change', (e) => startCamera(e.target.value));
+                } else {
+                    cameraList.innerHTML = '<option value="">Kamera tidak ditemukan</option>';
                 }
+            }).catch(err => {
+                console.error("Gagal memuat kamera:", err);
+                cameraList.innerHTML = '<option value="">Gagal memuat kamera</option>';
             });
         }
 
@@ -260,7 +271,7 @@ $tgl_indo = $daftar_hari[date('l')] . ', ' . date('d ') . $daftar_bulan[date('F'
                 $('#m-nama').text(d.nama);
                 $('#m-kelas').text(d.kelas);
                 $('#m-pesan').html(d.pesan);
-                if (d.foto) { $('#m-foto').attr('src', 'img/siswa/' + d.foto).show(); $('#m-foto-icon').hide(); } 
+                if (d.foto) { $('#m-foto').attr('src', 'img/' + d.foto).show(); $('#m-foto-icon').hide(); } 
                 else { $('#m-foto').hide(); $('#m-foto-icon').show(); }
 
                 if (d.status === 'success') {

@@ -246,7 +246,7 @@ include 'header.php';
                 <h6 class="fw-bold mb-4 text-muted text-uppercase small" style="letter-spacing: 1px;">Menu Navigasi</h6>
                 <div class="row g-2 g-md-3">
                     <div class="col-4 col-md-3"><a href="index.php" class="menu-btn"><div class="icon-flat bg-primary bg-opacity-10 text-primary"><i class="bi bi-qr-code-scan"></i></div><span class="menu-text">Scan Absen</span></a></div>
-                    <!-- <div class="col-4 col-md-3"><a href="scan_wajah.php" class="menu-btn"><div class="icon-flat bg-info bg-opacity-10 text-info"><i class="bi bi-person-bounding-box"></i></div><span class="menu-text">Scan Wajah</span></a></div> -->
+                    <div class="col-4 col-md-3"><a href="scan_wajah.php" class="menu-btn"><div class="icon-flat bg-info bg-opacity-10 text-info"><i class="bi bi-person-bounding-box"></i></div><span class="menu-text">Scan Wajah</span></a></div>
                     <div class="col-4 col-md-3"><a href="scan_rfid.php" class="menu-btn"><div class="icon-flat bg-primary bg-opacity-10 text-primary"><i class="bi bi-broadcast"></i></div><span class="menu-text">Scan RFID</span></a></div>
                     <div class="col-4 col-md-3"><a href="laporan.php" class="menu-btn"><div class="icon-flat bg-success bg-opacity-10 text-success"><i class="bi bi-file-earmark-bar-graph"></i></div><span class="menu-text">Laporan</span></a></div>
                     <div class="col-4 col-md-3"><a href="input_manual.php" class="menu-btn"><div class="icon-flat bg-warning bg-opacity-10 text-warning"><i class="bi bi-pencil-square"></i></div><span class="menu-text">Input Manual</span></a></div>
@@ -255,6 +255,7 @@ include 'header.php';
                     <?php endif; ?>
                     <?php if($role == 'admin'): ?>
                     <div class="col-4 col-md-3"><a href="data_siswa.php" class="menu-btn"><div class="icon-flat bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-people"></i></div><span class="menu-text">Siswa</span></a></div>
+                    <div class="col-4 col-md-3"><a href="data_guru.php" class="menu-btn"><div class="icon-flat bg-danger bg-opacity-10 text-danger"><i class="bi bi-person-workspace"></i></div><span class="menu-text">Guru</span></a></div>
                     <div class="col-4 col-md-3"><a href="data_kelas.php" class="menu-btn"><div class="icon-flat bg-primary bg-opacity-10 text-primary"><i class="bi bi-building"></i></div><span class="menu-text">Kelas</span></a></div>
                     <?php endif; ?>
                     <?php if($role == 'admin' || $role == 'walikelas'): ?>

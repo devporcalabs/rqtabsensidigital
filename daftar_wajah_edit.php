@@ -117,6 +117,12 @@ $nama_sekolah = $res_set['nama_sekolah'];
 
     // --- 3. KAMERA ---
     async function initKamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+            statusText.innerHTML = "<span class='text-danger'>HTTPS / Localhost Diperlukan!</span>";
+            console.error("navigator.mediaDevices is undefined. Camera access requires a secure context (HTTPS or localhost).");
+            return;
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             stream.getTracks().forEach(t => t.stop());
@@ -135,8 +141,11 @@ $nama_sekolah = $res_set['nama_sekolah'];
             if (videoDevices.length > 0) {
                 startStream(videoDevices[0].deviceId);
                 initAI();
+            } else {
+                statusText.innerHTML = "<span class='text-danger'>Kamera Tidak Ditemukan!</span>";
             }
         } catch (err) {
+            console.error(err);
             statusText.innerHTML = "<span class='text-danger'>Akses Kamera Ditolak!</span>";
         }
     }

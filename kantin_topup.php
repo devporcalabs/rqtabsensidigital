@@ -9,8 +9,8 @@ if (!isset($_SESSION['login'])) {
 }
 
 $role = $_SESSION['role'] ?? '';
-if ($role !== 'admin' && $role !== 'kantin') {
-    die("Akses Ditolak! Anda tidak memiliki izin untuk mengakses modul E-Kantin.");
+if ($role !== 'admin') {
+    die("Akses Ditolak! Fitur Top Up Saldo hanya tersedia untuk Administrator.");
 }
 
 // Security CSRF Token

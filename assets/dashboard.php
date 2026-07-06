@@ -299,7 +299,7 @@ include 'header.php';
                 
                 <div class="row g-2 g-md-3">
                     <div class="col-4 col-md-3"><a href="index.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/mobile_phone_3d.png"></div><span class="menu-text">Scan QR</span></a></div>
-                    <!-- <div class="col-4 col-md-3"><a href="scan_wajah.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/camera_3d.png"></div><span class="menu-text">Scan Wajah</span></a></div> -->
+                    <div class="col-4 col-md-3"><a href="scan_wajah.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/camera_3d.png"></div><span class="menu-text">Scan Wajah</span></a></div>
                     <div class="col-4 col-md-3"><a href="scan_rfid.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/credit_card_3d.png"></div><span class="menu-text">Scan RFID</span></a></div>
                     <div class="col-4 col-md-3"><a href="laporan.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/bar_chart_3d.png"></div><span class="menu-text">Laporan</span></a></div>
                     <div class="col-4 col-md-3"><a href="input_manual.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/memo_3d.png"></div><span class="menu-text">Input Manual</span></a></div>
@@ -310,6 +310,7 @@ include 'header.php';
                     
                     <?php if($role == 'admin'): ?>
                     <div class="col-4 col-md-3"><a href="data_siswa.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/graduation-cap.png"></div><span class="menu-text">Siswa</span></a></div>
+                    <div class="col-4 col-md-3"><a href="data_guru.php" class="menu-btn"><div class="icon-flat"><img src="https://img.icons8.com/?size=100&id=zosmvIG5xz1a&format=png&color=000000"></div><span class="menu-text">Guru</span></a></div>
                     <div class="col-4 col-md-3"><a href="data_kelas.php" class="menu-btn"><div class="icon-flat"><img src="assets/img/school_3d.png"></div><span class="menu-text">Kelas</span></a></div>
                     <?php endif; ?>
                     

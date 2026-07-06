@@ -12,21 +12,21 @@ function xss($data) {
 
 // 1. PROTEKSI ID
 if (!isset($_GET['id']) || empty($_GET['id'])) {
-    header("location: data_siswa.php"); exit;
+    header("location: data_guru.php"); exit;
 }
 
 $id = (int)$_GET['id'];
-$stmt = $conn->prepare("SELECT * FROM siswa WHERE id = ?");
+$stmt = $conn->prepare("SELECT * FROM guru WHERE id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $s = $stmt->get_result()->fetch_assoc();
 
 if (!$s) {
-    echo "<script>alert('Siswa tidak ditemukan!'); window.location='data_siswa.php';</script>";
+    echo "<script>alert('Guru tidak ditemukan!'); window.location='data_guru.php';</script>";
     exit;
 }
 
-// Cek apakah sudah ada data wajah (asumsi kolomnya bernama face_embedding)
+// Cek apakah sudah ada data wajah
 $sudah_ada_wajah = !empty($s['face_embedding']);
 
 // Ambil pengaturan sekolah
@@ -94,7 +94,7 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
 
 <nav class="navbar navbar-dark navbar-custom mb-4 shadow-sm">
     <div class="container text-center">
-        <a class="navbar-brand fw-800 mx-auto" href="#"><i class="bi bi-shield-lock me-2"></i>REGISTRASI BIOMETRIK</a>
+        <a class="navbar-brand fw-800 mx-auto" href="#"><i class="bi bi-shield-lock me-2"></i>REGISTRASI BIOMETRIK GURU</a>
     </div>
 </nav>
 
@@ -104,7 +104,7 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
             <div class="glass-card p-4 text-center">
                 <div class="mb-4">
                     <h5 class="fw-800 mb-1"><?= xss($s['nama']) ?></h5>
-                    <p class="text-muted small mb-0">NIS: <?= xss($s['nis']) ?> | Kelas: <?= xss($s['kelas']) ?></p>
+                    <p class="text-muted small mb-0">NIP: <?= xss($s['nip']) ?> | Jabatan: <?= xss($s['jabatan']) ?></p>
                 </div>
 
                 <div class="video-wrapper mb-4">
@@ -128,7 +128,7 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
                         </button>
                     <?php endif; ?>
 
-                    <a href="data_siswa.php" class="btn btn-light btn-vibrant mt-2">KEMBALI</a>
+                    <a href="data_guru.php" class="btn btn-light btn-vibrant mt-2">KEMBALI</a>
                 </div>
             </div>
         </div>
@@ -141,15 +141,15 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
     const statusBadge = document.getElementById('status-badge');
     const instructionText = document.getElementById('instruction-text');
     
-    // Konfigurasi Human AI (Dioptimalkan agar ringan)
+    // Konfigurasi Human AI
     const humanConfig = {
         backend: 'webgl',
         modelBasePath: 'https://vladmandic.github.io/human/models/',
         face: {
             enabled: true,
             detector: { return: true, rotation: true },
-            description: { enabled: true }, // Penting untuk rekam data
-            mesh: { enabled: false }, // Matikan mesh agar ringan
+            description: { enabled: true },
+            mesh: { enabled: false },
             iris: { enabled: false }
         },
         body: { enabled: false },
@@ -157,7 +157,7 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
     };
 
     const human = new Human.Human(humanConfig);
-    let isDetecting = false; // Flag agar tidak bentrok
+    let isDetecting = false;
 
     async function setupCamera() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -192,16 +192,14 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
         }
     }
 
-    // Fungsi Capture yang diperbaiki
+    // Capture wajah guru
     btnCapture.addEventListener('click', async () => {
         try {
             btnCapture.disabled = true;
             instructionText.innerHTML = "<i class='bi bi-hourglass-split'></i> Menganalisa wajah... Mohon tunggu.";
             
-            // Lakukan deteksi tunggal
             const result = await human.detect(video);
-            
-            console.log("Hasil AI:", result); // Cek di Console F12
+            console.log("Hasil AI:", result);
 
             if (!result.face || result.face.length === 0) {
                 alert("Wajah tidak terdeteksi dengan jelas! Pastikan wajah terlihat penuh.");
@@ -209,7 +207,6 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
                 return;
             }
 
-            // Ambil data embedding
             const embedding = result.face[0].embedding;
             if (!embedding) {
                 alert("AI Gagal mengekstrak fitur wajah. Coba posisi lain.");
@@ -219,13 +216,13 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
 
             const faceData = JSON.stringify(Array.from(embedding));
             
-            // Kirim ke server
+            // Kirim ke server simpan_wajah_guru.php
             const formData = new URLSearchParams();
             formData.append('id', '<?= $id ?>');
             formData.append('descriptor', faceData);
             formData.append('csrf_token', '<?= $_SESSION['csrf_token'] ?>');
 
-            const response = await fetch('simpan_wajah.php', {
+            const response = await fetch('simpan_wajah_guru.php', {
                 method: 'POST',
                 body: formData
             });
@@ -234,8 +231,8 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
             console.log("Respon Server:", data);
 
             if (data.status === 'success') {
-                alert("Pendaftaran Wajah Berhasil!");
-                window.location.href = 'data_siswa.php';
+                alert("Pendaftaran Wajah Guru Berhasil!");
+                window.location.href = 'data_guru.php';
             } else if (data.status === 'duplicate') {
                 alert("GAGAL! Wajah ini sudah milik: " + data.owner);
                 resetUI();
@@ -256,14 +253,11 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
         instructionText.innerHTML = "Silakan coba lagi.";
     }
 
-    // Ambil referensi tombol reset
+    // Logika reset/hapus data wajah guru
     const btnReset = document.getElementById('btn-reset');
-
-    // Tambahkan logika jika tombol tersebut ada di layar
     if (btnReset) {
         btnReset.addEventListener('click', async () => {
-            // 1. Konfirmasi ke user
-            if (!confirm("Apakah Anda yakin ingin menghapus data wajah siswa ini?")) {
+            if (!confirm("Apakah Anda yakin ingin menghapus data wajah guru ini?")) {
                 return;
             }
 
@@ -271,12 +265,11 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
                 btnReset.disabled = true;
                 btnReset.innerHTML = "<i class='bi bi-hourglass-split'></i> Menghapus...";
 
-                // 2. Kirim permintaan ke server
                 const formData = new URLSearchParams();
                 formData.append('id', '<?= $id ?>');
                 formData.append('csrf_token', '<?= $_SESSION['csrf_token'] ?>');
 
-                const response = await fetch('hapus_wajah.php', {
+                const response = await fetch('hapus_wajah_guru.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -285,7 +278,6 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
 
                 if (data.status === 'success') {
                     alert("Data wajah berhasil dihapus!");
-                    // Muat ulang halaman agar UI berubah (tombol hapus hilang)
                     window.location.reload();
                 } else {
                     alert("Gagal menghapus: " + data.message);
@@ -294,13 +286,15 @@ $nama_sekolah = $res_set['nama_sekolah'] ?? 'Porcalabs School';
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert("Terjadi kesalahan koneksi.");
+                alert("Kesalahan koneksi.");
                 btnReset.disabled = false;
+                btnReset.innerHTML = "<i class='bi bi-trash3-fill me-2'></i>HAPUS DATA WAJAH LAMA";
             }
         });
     }
-    window.onload = setupCamera;
-</script>
 
+    // Jalankan inisialisasi kamera
+    setupCamera();
+</script>
 </body>
 </html>

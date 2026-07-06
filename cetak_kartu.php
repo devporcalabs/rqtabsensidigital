@@ -11,7 +11,11 @@ if(!isset($_SESSION['login'])){
 $id = $_GET['id'];
 $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'siswa'; 
 
-$query = mysqli_query($conn, "SELECT * FROM siswa WHERE id = '$id'");
+if ($tipe == 'guru') {
+    $query = mysqli_query($conn, "SELECT id, nip AS nis, nama, jabatan AS kelas, foto FROM guru WHERE id = '$id'");
+} else {
+    $query = mysqli_query($conn, "SELECT * FROM siswa WHERE id = '$id'");
+}
 $s = mysqli_fetch_assoc($query);
 
 // Ambil Nama Sekolah
@@ -33,7 +37,7 @@ if ($tipe == 'guru') {
 
 // Logika Cek Foto
 $punya_foto = false;
-$foto_path = "img/siswa/" . $s['foto'];
+$foto_path = ($tipe == 'guru') ? "img/guru/" . $s['foto'] : "img/siswa/" . $s['foto'];
 if (!empty($s['foto']) && file_exists($foto_path)) {
     $punya_foto = true;
 }

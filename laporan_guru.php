@@ -17,12 +17,7 @@ if(!isset($_SESSION['login'])){
 }
 
 $role = $_SESSION['role'];
-if ($role === 'kantin') {
-    header("location: kantin_kasir.php");
-    exit;
-}
 $nama_user = $_SESSION['nama'];
-$kelas_diampu = $_SESSION['kelas_diampu'] ?? '';
 
 // --- 2. AMBIL PENGATURAN ---
 $stmt_set = $conn->prepare("SELECT * FROM pengaturan WHERE id = 1");
@@ -35,7 +30,6 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'harian';
 $tgl_harian = isset($_GET['tgl_harian']) ? $_GET['tgl_harian'] : date('Y-m-d');
 $tgl_awal = isset($_GET['tgl_awal']) ? $_GET['tgl_awal'] : date('Y-m-d');
 $tgl_akhir = isset($_GET['tgl_akhir']) ? $_GET['tgl_akhir'] : date('Y-m-d');
-$kelas_filter = ($role == 'walikelas') ? $kelas_diampu : (isset($_GET['kelas']) ? $_GET['kelas'] : '');
 $keyword = isset($_GET['q']) ? $_GET['q'] : ''; 
 
 // --- 4. FUNGSI HITUNG HARI KERJA ---
@@ -50,21 +44,18 @@ function hitungHariKerja($start, $end, $libur_p, $conn) {
     $libur_manual = [];
     while($l = $res_l->fetch_assoc()) { $libur_manual[] = $l['tanggal']; }
 
-    // PERUBAHAN: Ubah string libur dari database menjadi array
     $libur_rutin_array = explode(',', $libur_p);
     
-    // Array untuk mapping angka hari ke nama hari bahasa Indonesia
     $map_hari_indo = [
         1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 
         5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'
     ];
 
     foreach ($period as $date) {
-        $hari_angka = $date->format('N'); // Mengembalikan angka 1 (Senin) - 7 (Minggu)
-        $nama_hari_ini = $map_hari_indo[$hari_angka]; // Konversi ke teks bahasa Indonesia
+        $hari_angka = $date->format('N');
+        $nama_hari_ini = $map_hari_indo[$hari_angka];
         $tgl_str = $date->format('Y-m-d');
         
-        // Pengecekan apakah hari ini ada di dalam array libur yang disetting
         $is_weekend = in_array($nama_hari_ini, $libur_rutin_array);
         
         if (!$is_weekend && !in_array($tgl_str, $libur_manual)) { $count++; }
@@ -77,22 +68,20 @@ $params = [];
 $types = "";
 
 if ($mode == 'harian') {
-    $sql = "SELECT s.nis, s.nama, s.kelas, s.sesi, a.waktu_masuk, a.waktu_pulang, a.keterangan, a.status_kehadiran
-            FROM siswa s
-            LEFT JOIN absensi a ON s.nis = a.nis AND DATE(a.waktu_masuk) = ?
+    $sql = "SELECT g.nip, g.nama, g.jabatan, ag.waktu_masuk, ag.waktu_pulang, ag.keterangan, ag.status_kehadiran
+            FROM guru g
+            LEFT JOIN absensi_guru ag ON g.nip = ag.nip AND DATE(ag.waktu_masuk) = ?
             WHERE 1=1";
     $params[] = $tgl_harian;
     $types .= "s";
 
-    // PENCARIAN NAMA / NIS / STATUS
+    // PENCARIAN
     if ($keyword != '') {
         $kw_low = strtolower($keyword);
         if ($kw_low == 'alpha') {
-            $sql .= " AND a.waktu_masuk IS NULL";
-        } else if ($kw_low == 'bolos') {
-            $sql .= " AND a.waktu_masuk IS NOT NULL AND a.waktu_pulang IS NULL";
+            $sql .= " AND ag.waktu_masuk IS NULL";
         } else {
-            $sql .= " AND (s.nama LIKE ? OR s.nis LIKE ? OR a.keterangan LIKE ? OR a.status_kehadiran LIKE ?)";
+            $sql .= " AND (g.nama LIKE ? OR g.nip LIKE ? OR g.jabatan LIKE ? OR ag.keterangan LIKE ?)";
             $search = "%$keyword%";
             $params[] = $search; $params[] = $search; $params[] = $search; $params[] = $search;
             $types .= "ssss";
@@ -100,38 +89,32 @@ if ($mode == 'harian') {
     }
 } else {
     $hari_efektif = hitungHariKerja($tgl_awal, $tgl_akhir, $libur_pekanan, $conn);
-    $sql = "SELECT s.nis, s.nama, s.kelas,
-            COUNT(CASE WHEN a.keterangan = 'Hadir' AND a.status_kehadiran = 'Tepat Waktu' THEN 1 END) as jml_hadir,
-            COUNT(CASE WHEN a.status_kehadiran = 'Terlambat' THEN 1 END) as jml_telat,
-            COUNT(CASE WHEN a.keterangan = 'Izin' THEN 1 END) as jml_izin,
-            COUNT(CASE WHEN a.keterangan = 'Sakit' THEN 1 END) as jml_sakit,
-            COUNT(CASE WHEN a.keterangan = 'Bolos' THEN 1 END) as jml_bolos
-            FROM siswa s
-            LEFT JOIN absensi a ON s.nis = a.nis AND DATE(a.waktu_masuk) BETWEEN ? AND ?
+    $sql = "SELECT g.nip, g.nama, g.jabatan,
+            COUNT(CASE WHEN ag.keterangan = 'Hadir' AND ag.status_kehadiran = 'Tepat Waktu' THEN 1 END) as jml_hadir,
+            COUNT(CASE WHEN ag.status_kehadiran = 'Terlambat' THEN 1 END) as jml_telat,
+            COUNT(CASE WHEN ag.keterangan = 'Izin' THEN 1 END) as jml_izin,
+            COUNT(CASE WHEN ag.keterangan = 'Sakit' THEN 1 END) as jml_sakit,
+            COUNT(CASE WHEN ag.keterangan = 'Bolos' THEN 1 END) as jml_bolos
+            FROM guru g
+            LEFT JOIN absensi_guru ag ON g.nip = ag.nip AND DATE(ag.waktu_masuk) BETWEEN ? AND ?
             WHERE 1=1";
     $params[] = $tgl_awal; $params[] = $tgl_akhir; $types .= "ss";
 
     if ($keyword != '') {
-        $sql .= " AND (s.nama LIKE ? OR s.nis LIKE ?)";
+        $sql .= " AND (g.nama LIKE ? OR g.nip LIKE ? OR g.jabatan LIKE ?)";
         $search = "%$keyword%";
-        $params[] = $search; $params[] = $search; $types .= "ss";
+        $params[] = $search; $params[] = $search; $params[] = $search;
+        $types .= "sss";
     }
 }
 
-if ($kelas_filter != '') { 
-    $sql .= " AND s.kelas = ?"; 
-    $params[] = $kelas_filter; $types .= "s";
-}
-
-if ($mode == 'rekap') { $sql .= " GROUP BY s.nis"; }
-$sql .= " ORDER BY s.nama ASC";
+if ($mode == 'rekap') { $sql .= " GROUP BY g.nip"; }
+$sql .= " ORDER BY g.nama ASC";
 
 $stmt_main = $conn->prepare($sql);
 if($types) $stmt_main->bind_param($types, ...$params);
 $stmt_main->execute();
 $result = $stmt_main->get_result();
-
-$q_kelas = mysqli_query($conn, "SELECT nama_kelas FROM kelas ORDER BY nama_kelas ASC");
 
 include 'header.php'; 
 ?>
@@ -140,7 +123,7 @@ include 'header.php';
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Absensi - <?= xss($sett['nama_sekolah']) ?></title>
+    <title>Laporan Absensi Guru - <?= xss($sett['nama_sekolah']) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -198,81 +181,74 @@ include 'header.php';
 </head>
 <body>
 
-<div class="container py-2">
+<div class="container py-5" style="margin-top: 50px;">
     <div class="glass-card p-4 mb-4">
         <form method="GET">
             <div class="row g-3 align-items-end">
-                <div class="col-md-2">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Mode</label>
-                    <select name="mode" id="modeSelect" class="form-select fw-bold text-primary" onchange="toggleInputs()">
-                        <option value="harian" <?= $mode == 'harian' ? 'selected' : '' ?>>HARIAN</option>
-                        <option value="rekap" <?= $mode == 'rekap' ? 'selected' : '' ?>>REKAP</option>
-                    </select>
-                </div>
                 <div class="col-md-3">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Pencarian</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-0 rounded-start-4"><i class="bi bi-search"></i></span>
-                        <input type="text" name="q" class="form-control border-0 rounded-end-4" placeholder="Nama / NIS / Status..." value="<?= xss($keyword) ?>">
-                    </div>
-                </div>
-                <?php if($role != 'walikelas'): ?>
-                <div class="col-md-2">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Kelas</label>
-                    <select name="kelas" class="form-select">
-                        <option value="">Semua Kelas</option>
-                        <?php while($k = mysqli_fetch_assoc($q_kelas)): ?>
-                            <option value="<?= xss($k['nama_kelas']) ?>" <?= $kelas_filter == $k['nama_kelas'] ? 'selected' : '' ?>><?= xss($k['nama_kelas']) ?></option>
-                        <?php endwhile; ?>
+                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-funnel-fill me-1 text-primary"></i> Mode Laporan</label>
+                    <select name="mode" id="modeSelect" class="form-select" onchange="toggleInputs()">
+                        <option value="harian" <?= ($mode == 'harian') ? 'selected' : '' ?>>Laporan Harian</option>
+                        <option value="rekap" <?= ($mode == 'rekap') ? 'selected' : '' ?>>Rekapitulasi Periode</option>
                     </select>
                 </div>
-                <?php endif; ?>
-                <div class="col-md-3" id="inputHarian" style="display: <?= $mode == 'harian' ? 'block' : 'none' ?>;">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Tanggal</label>
-                    <input type="date" name="tgl_harian" class="form-control" value="<?= xss($tgl_harian) ?>">
+
+                <div class="col-md-3" id="inputHarian" style="display: <?= ($mode == 'harian') ? 'block' : 'none' ?>;">
+                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-calendar-event me-1 text-primary"></i> Tanggal</label>
+                    <input type="date" name="tgl_harian" value="<?= $tgl_harian ?>" class="form-control">
                 </div>
-                <div class="col-md-2" id="inputAwal" style="display: <?= $mode == 'rekap' ? 'block' : 'none' ?>;">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Dari</label>
-                    <input type="date" name="tgl_awal" class="form-control" value="<?= xss($tgl_awal) ?>">
+
+                <div class="col-md-3" id="inputAwal" style="display: <?= ($mode == 'rekap') ? 'block' : 'none' ?>;">
+                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-calendar-date me-1 text-primary"></i> Tanggal Awal</label>
+                    <input type="date" name="tgl_awal" value="<?= $tgl_awal ?>" class="form-control">
                 </div>
-                <div class="col-md-2" id="inputAkhir" style="display: <?= $mode == 'rekap' ? 'block' : 'none' ?>;">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Sampai</label>
-                    <input type="date" name="tgl_akhir" class="form-control" value="<?= xss($tgl_akhir) ?>">
+
+                <div class="col-md-3" id="inputAkhir" style="display: <?= ($mode == 'rekap') ? 'block' : 'none' ?>;">
+                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-calendar-date me-1 text-primary"></i> Tanggal Akhir</label>
+                    <input type="date" name="tgl_akhir" value="<?= $tgl_akhir ?>" class="form-control">
                 </div>
-                <div class="col-md-1">
-                    <button type="submit" class="btn btn-primary btn-vibrant w-100"><i class="bi bi-filter"></i></button>
+
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-search me-1 text-primary"></i> Pencarian</label>
+                    <input type="text" name="q" value="<?= xss($keyword) ?>" class="form-control" placeholder="Nama / NIP / Jabatan / Status...">
+                </div>
+
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100 btn-vibrant"><i class="bi bi-search me-1"></i> Tampilkan</button>
                 </div>
             </div>
         </form>
     </div>
 
-    <div class="glass-card overflow-hidden">
-        <div class="p-4 d-flex justify-content-between align-items-center bg-white bg-opacity-40 border-bottom">
-            <div>
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-800">
-                    <i class="bi bi-calendar-event me-1"></i>
-                    <?= $mode == 'harian' ? date('d M Y', strtotime($tgl_harian)) : date('d M Y', strtotime($tgl_awal)).' - '.date('d M Y', strtotime($tgl_akhir)) ?>
-                </span>
-            </div>
-            <a href="export_excel.php?mode=<?= $mode ?>&tgl_harian=<?= $tgl_harian ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&kelas=<?= $kelas_filter ?>&q=<?= urlencode($keyword) ?>" class="btn btn-success btn-vibrant shadow-sm">
-                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-            </a>
+    <!-- TAMPILAN DATA -->
+    <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold m-0 text-primary">
+                <i class="bi bi-journal-check me-2"></i>
+                <?= ($mode == 'harian') ? 'Laporan Harian Tanggal ' . date('d/m/Y', strtotime($tgl_harian)) : 'Rekapitulasi Kehadiran (' . $hari_efektif . ' Hari Kerja)' ?>
+            </h5>
+            
+            <?php if($mode == 'rekap'): ?>
+                <button onclick="window.print()" class="btn btn-outline-primary btn-sm rounded-pill px-3"><i class="bi bi-printer me-1"></i> Cetak PDF</button>
+            <?php endif; ?>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table align-middle">
                 <thead>
-                    <?php if($mode == 'harian'): ?>
+                    <?php if ($mode == 'harian'): ?>
                     <tr>
-                        <th class="ps-4">No</th>
-                        <th>Identitas Siswa</th>
-                        <th class="text-center">Masuk</th>
-                        <th class="text-center">Pulang</th>
-                        <th class="text-center pe-4">Status</th>
+                        <th class="ps-4" width="60">No</th>
+                        <th>Nama & NIP Guru</th>
+                        <th>Jabatan</th>
+                        <th class="text-center">Jam Masuk</th>
+                        <th class="text-center">Jam Pulang</th>
+                        <th class="text-center pe-4" width="120">Status</th>
                     </tr>
                     <?php else: ?>
                     <tr>
-                        <th class="ps-4">Identitas Siswa</th>
+                        <th class="ps-4">Identitas Guru</th>
+                        <th>Jabatan</th>
                         <th class="text-center text-success">Hadir</th>
                         <th class="text-center text-warning">Telat</th>
                         <th class="text-center text-info">Izin/Skt</th>
@@ -292,7 +268,7 @@ include 'header.php';
                             if ($mode == 'harian'):
                                 $jam_m = $row['waktu_masuk'] ? date('H:i', strtotime($row['waktu_masuk'])) : '-';
                                 $jam_p = $row['waktu_pulang'] ? date('H:i', strtotime($row['waktu_pulang'])) : '-';
-                                $jam_pulang_patokan = ($row['sesi'] == '1') ? $sett['s1_pulang'] : $sett['s2_pulang'];
+                                $jam_pulang_patokan = $sett['jam_pulang_min'];
 
                                 if(!$row['waktu_masuk']) {
                                     $st = "ALPHA"; $css = "st-alpha";
@@ -316,22 +292,23 @@ include 'header.php';
                         <td class="ps-4 text-muted small"><?= $no++ ?></td>
                         <td>
                             <div class="fw-800 text-dark"><?= xss($row['nama']) ?></div>
-                            <div class="small text-muted"><?= xss($row['nis']) ?> • <?= xss($row['kelas']) ?></div>
+                            <div class="small text-muted font-monospace"><?= xss($row['nip']) ?></div>
                         </td>
+                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary p-2"><?= xss($row['jabatan']) ?></span></td>
                         <td class="text-center fw-bold text-primary"><?= $jam_m ?></td>
                         <td class="text-center fw-bold text-primary"><?= $jam_p ?></td>
                         <td class="text-center pe-4"><span class="badge badge-status <?= $css ?>"><?= $st ?></span></td>
                     </tr>
                     <?php else: 
                             $total_in = $row['jml_hadir'] + $row['jml_telat'] + $row['jml_izin'] + $row['jml_sakit'] + $row['jml_bolos'];
-                            // Perhitungan Alpha didapat dari hari efektif dikurangi jumlah siswa absen (hadir/sakit/izin/bolos)
                             $jml_alpha = max(0, $hari_efektif - $total_in);
                     ?>
                     <tr>
                         <td class="ps-4 py-3">
                             <div class="fw-800 text-dark"><?= xss($row['nama']) ?></div>
-                            <div class="text-muted small"><?= xss($row['nis']) ?> • <?= xss($row['kelas']) ?></div>
+                            <div class="text-muted small font-monospace"><?= xss($row['nip']) ?></div>
                         </td>
+                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary p-2"><?= xss($row['jabatan']) ?></span></td>
                         <td class="text-center fw-800 text-success"><?= $row['jml_hadir'] ?></td>
                         <td class="text-center fw-800 text-warning"><?= $row['jml_telat'] ?></td>
                         <td class="text-center fw-800 text-info"><?= $row['jml_izin'] + $row['jml_sakit'] ?></td>
@@ -348,7 +325,6 @@ include 'header.php';
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function toggleInputs() {
         var mode = document.getElementById("modeSelect").value;

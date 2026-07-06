@@ -12,7 +12,8 @@ function xss($data) {
 }
 
 if(isset($_SESSION['login']) && isset($_SESSION['id'])){
-    header("location: dashboard.php");
+    $redirect = ($_SESSION['role'] ?? '') == 'kantin' ? 'kantin_kasir.php' : 'dashboard.php';
+    header("location: " . $redirect);
     exit;
 }
 
@@ -48,7 +49,8 @@ if(isset($_POST['login'])){
                 $_SESSION['role'] = $d['role'];
                 $_SESSION['nama'] = $d['nama_lengkap'] ?? $d['nama'] ?? $d['username']; 
                 
-                header("location: dashboard.php");
+                $redirect = ($d['role'] == 'kantin') ? "kantin_kasir.php" : "dashboard.php";
+                header("location: " . $redirect);
                 exit;
             } else {
                 $error_message = "Username atau Password salah!";

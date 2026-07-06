@@ -22,6 +22,11 @@ $id_user = (int)$_SESSION['id'];
 $role = $_SESSION['role'] ?? 'user';
 $kelas_diampu = $_SESSION['kelas_diampu'] ?? 'Semua Kelas';
 
+if ($role === 'kantin') {
+    header("location: kantin_kasir.php");
+    exit;
+}
+
 // Ambil data user
 $stmt_user = $conn->prepare("SELECT * FROM users WHERE id = ?");
 $stmt_user->bind_param("i", $id_user);
@@ -312,7 +317,7 @@ include 'header.php';
                 
                 <div class="row g-2 g-md-3">
                     <div class="col-4 col-md-3"><a href="index.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Mobile%20phone/3D/mobile_phone_3d.png"></div><span class="menu-text">Scan QR</span></a></div>
-                    <!-- <div class="col-4 col-md-3"><a href="scan_wajah.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Camera/3D/camera_3d.png"></div><span class="menu-text">Scan Wajah</span></a></div> -->
+                    <div class="col-4 col-md-3"><a href="scan_wajah.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Camera/3D/camera_3d.png"></div><span class="menu-text">Scan Wajah</span></a></div>
                     <div class="col-4 col-md-3"><a href="scan_rfid.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Credit%20card/3D/credit_card_3d.png"></div><span class="menu-text">Scan RFID</span></a></div>
                     <div class="col-4 col-md-3"><a href="laporan.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bar%20chart/3D/bar_chart_3d.png"></div><span class="menu-text">Laporan</span></a></div>
                     <div class="col-4 col-md-3"><a href="input_manual.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Memo/3D/memo_3d.png"></div><span class="menu-text">Input Manual</span></a></div>
@@ -323,6 +328,7 @@ include 'header.php';
                     
                     <?php if($role == 'admin'): ?>
                     <div class="col-4 col-md-3"><a href="data_siswa.php" class="menu-btn"><div class="icon-flat"><img src="https://img.icons8.com/3d-fluency/94/graduation-cap.png"></div><span class="menu-text">Siswa</span></a></div>
+                    <div class="col-4 col-md-3"><a href="data_guru.php" class="menu-btn"><div class="icon-flat"><img src="https://img.icons8.com/?size=100&id=zosmvIG5xz1a&format=png&color=000000"></div><span class="menu-text">Guru</span></a></div>
                     <div class="col-4 col-md-3"><a href="data_kelas.php" class="menu-btn"><div class="icon-flat"><img src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/School/3D/school_3d.png"></div><span class="menu-text">Kelas</span></a></div>
                     <?php endif; ?>
                     

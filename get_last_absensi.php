@@ -1,13 +1,21 @@
 <?php
 include 'koneksi.php';
 
-// Ambil 10 absensi terbaru hari ini
+// Ambil 5 absensi terbaru hari ini (siswa & guru)
 $tgl = date('Y-m-d');
-$sql = "SELECT a.waktu_masuk, a.waktu_pulang, a.status_kehadiran, a.keterangan, s.nama, s.kelas, s.foto 
-        FROM absensi a 
-        JOIN siswa s ON a.nis = s.nis 
-        WHERE DATE(a.waktu_masuk) = '$tgl' 
-        ORDER BY GREATEST(IFNULL(a.waktu_masuk, 0), IFNULL(a.waktu_pulang, 0)) DESC LIMIT 5";
+$sql = "SELECT waktu_masuk, waktu_pulang, status_kehadiran, keterangan, nama, kelas, foto
+        FROM (
+            SELECT a.waktu_masuk, a.waktu_pulang, a.status_kehadiran, a.keterangan, s.nama, s.kelas, CONCAT('siswa/', s.foto) AS foto
+            FROM absensi a 
+            JOIN siswa s ON a.nis = s.nis 
+            WHERE DATE(a.waktu_masuk) = '$tgl' 
+            UNION ALL
+            SELECT ag.waktu_masuk, ag.waktu_pulang, ag.status_kehadiran, ag.keterangan, g.nama, 'Guru' AS kelas, CONCAT('guru/', g.foto) AS foto
+            FROM absensi_guru ag 
+            JOIN guru g ON ag.nip = g.nip 
+            WHERE DATE(ag.waktu_masuk) = '$tgl' 
+        ) combined
+        ORDER BY GREATEST(IFNULL(waktu_masuk, 0), IFNULL(waktu_pulang, 0)) DESC LIMIT 5";
 
 $query = mysqli_query($conn, $sql);
 
@@ -25,7 +33,7 @@ if(mysqli_num_rows($query) > 0){
         }
 
         // Logika Foto atau Icon CSS
-        $foto_path = "img/siswa/" . $row['foto'];
+        $foto_path = "img/" . $row['foto'];
         if(!empty($row['foto']) && file_exists($foto_path)){
             $avatar = '<img src="'.$foto_path.'" class="avatar-img shadow-sm" alt="foto">';
         } else {

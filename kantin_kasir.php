@@ -233,10 +233,10 @@ include 'header.php';
                     </div>
 
                     <!-- RFID TAP AREA -->
-                    <div class="tap-card">
-                        <div class="mb-2"><i class="bi bi-wifi pulse-icon"></i></div>
-                        <h5 class="fw-bold mb-1">SIAP PINDAI KARTU PELAJAR</h5>
-                        <p class="small opacity-75 mb-0" id="tap-instruction">Ketik nominal di atas lalu tap kartu RFID siswa pada pembaca kartu</p>
+                    <div class="tap-card" id="btn-proses-bayar" onclick="bukaKonfirmasi()" style="cursor: pointer; transition: 0.3s;">
+                        <div class="mb-2"><i class="bi bi-credit-card-2-front pulse-icon"></i></div>
+                        <h5 class="fw-bold mb-1">MULAI PEMBAYARAN</h5>
+                        <p class="small opacity-75 mb-0" id="tap-instruction">Ketik nominal di atas lalu klik di sini untuk scan kartu</p>
                     </div>
                 </div>
             </div>
@@ -249,6 +249,33 @@ include 'header.php';
                         <!-- Akan diisi otomatis oleh AJAX -->
                         <div class="text-center py-5 text-muted small">Memuat riwayat transaksi...</div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI PEMBAYARAN -->
+    <div class="modal fade" id="modalConfirm" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 25px; overflow:hidden;">
+                <div class="p-3 text-center fw-bold text-white fs-5" style="background: linear-gradient(90deg, #0d6efd 0%, #6610f2 100%);">
+                    KONFIRMASI PEMBAYARAN
+                </div>
+                <div class="modal-body text-center p-5">
+                    <div class="mb-3 text-primary">
+                        <i class="bi bi-wifi pulse-icon" style="font-size: 80px;"></i>
+                    </div>
+                    <h5 class="text-muted mb-2">Total Nominal Belanja</h5>
+                    <h2 id="confirm-nominal" class="fw-bold text-success mb-4">Rp 0</h2>
+                    
+                    <div class="alert alert-info border-0 rounded-4 p-3 mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Siap Scan!</strong> Silakan tempelkan kartu RFID siswa pada pembaca kartu.
+                    </div>
+                    
+                    <button type="button" class="btn btn-secondary w-100 py-3 fw-bold rounded-4" data-bs-dismiss="modal">
+                        BATALKAN
+                    </button>
                 </div>
             </div>
         </div>
@@ -294,9 +321,11 @@ include 'header.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const modalResult = new bootstrap.Modal(document.getElementById('modalResult'));
+        const modalConfirm = new bootstrap.Modal(document.getElementById('modalConfirm'));
         const rfidInput = document.getElementById('rfid_field');
         let currentNominal = "";
         let isProcessing = false;
+        let isReadyToScan = false;
         let isSoundEnabled = localStorage.getItem('kantin-sound') !== 'off';
 
         // --- SOUND MANAGER ---
@@ -440,15 +469,27 @@ include 'header.php';
                 setTimeout(() => {
                     modalResult.hide();
                     isProcessing = false;
-                    document.getElementById('tap-instruction').textContent = "Ketik nominal di atas lalu tap kartu RFID siswa pada pembaca kartu";
+                    document.getElementById('tap-instruction').textContent = "Ketik nominal di atas lalu klik di sini untuk scan kartu";
                     focusRFID();
                 }, 3000);
             }).fail(function() {
                 alert("Gagal menghubungi server.");
                 isProcessing = false;
-                document.getElementById('tap-instruction').textContent = "Ketik nominal di atas lalu tap kartu RFID siswa pada pembaca kartu";
+                document.getElementById('tap-instruction').textContent = "Ketik nominal di atas lalu klik di sini untuk scan kartu";
                 focusRFID();
             });
+        }
+
+        function bukaKonfirmasi() {
+            const nominal = parseInt(currentNominal || "0");
+            if (nominal <= 0) {
+                suaraPemberitahuan("Please enter the purchase amount first.");
+                alert("Nominal belanja harus lebih dari Rp 0!");
+                return;
+            }
+            document.getElementById('confirm-nominal').textContent = formatRupiah(nominal);
+            isReadyToScan = true;
+            modalConfirm.show();
         }
 
         // --- UPDATE FEED ---
@@ -468,11 +509,21 @@ include 'header.php';
                 focusRFID();
             });
 
+            document.getElementById('modalConfirm').addEventListener('hidden.bs.modal', function () {
+                isReadyToScan = false;
+            });
+
             rfidInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !isProcessing) {
                     const code = rfidInput.value.trim();
                     rfidInput.value = '';
                     if (code !== '') {
+                        if (!isReadyToScan) {
+                            suaraPemberitahuan("Please confirm payment amount first.");
+                            alert("Silakan klik tombol 'MULAI PEMBAYARAN' terlebih dahulu sebelum menempelkan kartu!");
+                            return;
+                        }
+                        modalConfirm.hide();
                         prosesTransaksi(code);
                     }
                 }

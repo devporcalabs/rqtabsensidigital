@@ -8,11 +8,20 @@ $pengaturan = mysqli_fetch_assoc($querySetting);
 $nama_sekolah = htmlspecialchars($pengaturan['nama_sekolah'] ?? 'Porcalabs School');
 $logo = $pengaturan['logo_sekolah'] ?? 'porcalabs.ico';
 
-// --- AMBIL DATA WAJAH DARI DATABASE ---
-$query = mysqli_query($conn, "SELECT nis, nama, kelas, foto, face_embedding FROM siswa WHERE face_embedding IS NOT NULL AND face_embedding != ''");
+// --- AMBIL DATA WAJAH DARI DATABASE (SISWA & GURU) ---
 $db_faces = [];
-while($row = mysqli_fetch_assoc($query)){
+// 1. Siswa
+$query_siswa = mysqli_query($conn, "SELECT nis, nama, kelas, foto, face_embedding FROM siswa WHERE face_embedding IS NOT NULL AND face_embedding != ''");
+while($row = mysqli_fetch_assoc($query_siswa)){
     $row['face_descriptor'] = json_decode($row['face_embedding']); 
+    $row['tipe'] = 'siswa';
+    $db_faces[] = $row;
+}
+// 2. Guru
+$query_guru = mysqli_query($conn, "SELECT nip AS nis, nama, 'Guru' AS kelas, foto, face_embedding FROM guru WHERE face_embedding IS NOT NULL AND face_embedding != ''");
+while($row = mysqli_fetch_assoc($query_guru)){
+    $row['face_descriptor'] = json_decode($row['face_embedding']); 
+    $row['tipe'] = 'guru';
     $db_faces[] = $row;
 }
 ?>
@@ -360,7 +369,7 @@ while($row = mysqli_fetch_assoc($query)){
             bannerAI.style.display = 'none';
             statusText.innerHTML = '<i class="bi bi-shield-check text-success"></i> SCANNER READY';
 
-            loadCameras();
+            await loadCameras();
             loadLastAbsensi();
         } catch (err) {
             console.error(err);
@@ -372,34 +381,54 @@ while($row = mysqli_fetch_assoc($query)){
     // KAMERA — kamera depan diutamakan
     // ----------------------------------------------------------------
     async function loadCameras() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+            statusText.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> HTTPS Diperlukan / Kamera Diblokir';
+            cameraList.innerHTML = '<option value="">Gunakan HTTPS / Localhost</option>';
+            console.error("navigator.mediaDevices is undefined. Accessing camera requires a secure context (HTTPS or localhost).");
+            return;
+        }
+
         try {
             // Minta izin kamera dulu agar label tersedia
             const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
             tempStream.getTracks().forEach(t => t.stop());
-        } catch(e) { /* lanjut meski ditolak */ }
+        } catch(e) { 
+            console.warn("Gagal meminta izin awal kamera:", e);
+        }
 
-        const devices      = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        try {
+            const devices      = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
-        cameraList.innerHTML = videoDevices.map((d, i) =>
-            `<option value="${d.deviceId}">${d.label || 'Kamera ' + (i + 1)}</option>`
-        ).join('');
+            if (videoDevices.length === 0) {
+                statusText.innerHTML = '<i class="bi bi-camera-video-off text-danger"></i> Tidak ada kamera terdeteksi';
+                cameraList.innerHTML = '<option value="">Kamera tidak ditemukan</option>';
+                return;
+            }
 
-        // Cari kamera depan berdasarkan label
-        const frontCam = videoDevices.find(d => {
-            const label = d.label.toLowerCase();
-            return label.includes('front')  ||
-                   label.includes('depan')  ||
-                   label.includes('user')   ||
-                   label.includes('selfie') ||
-                   label.includes('facetime');
-        });
+            cameraList.innerHTML = videoDevices.map((d, i) =>
+                `<option value="${d.deviceId}">${d.label || 'Kamera ' + (i + 1)}</option>`
+            ).join('');
 
-        // Gunakan kamera depan jika ketemu, atau fallback ke index 0
-        const targetCam = frontCam || videoDevices[0];
-        if (targetCam) {
-            cameraList.value = targetCam.deviceId;
-            startCamera(targetCam.deviceId);
+            // Cari kamera depan berdasarkan label
+            const frontCam = videoDevices.find(d => {
+                const label = d.label.toLowerCase();
+                return label.includes('front')  ||
+                       label.includes('depan')  ||
+                       label.includes('user')   ||
+                       label.includes('selfie') ||
+                       label.includes('facetime');
+            });
+
+            // Gunakan kamera depan jika ketemu, atau fallback ke index 0
+            const targetCam = frontCam || videoDevices[0];
+            if (targetCam) {
+                cameraList.value = targetCam.deviceId;
+                startCamera(targetCam.deviceId);
+            }
+        } catch (err) {
+            console.error("Error enumerateDevices:", err);
+            statusText.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> Gagal memuat daftar kamera';
         }
     }
 
@@ -630,7 +659,7 @@ while($row = mysqli_fetch_assoc($query)){
                 const d = typeof res === 'object' ? res : JSON.parse(res);
                 $('#m-nama').text(d.nama);
                 $('#m-kelas').text(d.kelas);
-                $('#m-foto').attr('src', 'img/siswa/' + (d.foto || 'default.png'));
+                $('#m-foto').attr('src', 'img/' + (d.foto || 'siswa/default.jpg'));
                 $('#m-pesan').text(d.pesan);
 
                 if (d.status === 'success') {

@@ -71,16 +71,23 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto gap-2">
+                <?php if ($role !== 'kantin'): ?>
                 <li class="nav-item">
                     <a class="nav-link <?= ($current_page == 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard
                     </a>
                 </li>
+                <?php endif; ?>
                 
                 <?php if ($role == 'admin'): ?>
                 <li class="nav-item">
                     <a class="nav-link <?= ($current_page == 'data_siswa.php') ? 'active' : ''; ?>" href="data_siswa.php">
                         <i class="bi bi-people me-1"></i> Siswa
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= ($current_page == 'data_guru.php') ? 'active' : ''; ?>" href="data_guru.php">
+                        <i class="bi bi-person-badge me-1"></i> Guru
                     </a>
                 </li>
                 <?php endif; ?>
@@ -96,11 +103,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                 <i class="bi bi-calculator me-2"></i> Kasir Kantin
                             </a>
                         </li>
+                        <?php if ($role == 'admin'): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'kantin_topup.php') ? 'active bg-primary text-white' : ''; ?>" href="kantin_topup.php">
                                 <i class="bi bi-wallet2 me-2"></i> Top Up Saldo
                             </a>
                         </li>
+                        <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'kantin_laporan.php') ? 'active bg-primary text-white' : ''; ?>" href="kantin_laporan.php">
@@ -111,11 +120,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </li>
                 <?php endif; ?>
 
+                <?php if ($role !== 'kantin'): ?>
                 <li class="nav-item">
                     <a class="nav-link <?= ($current_page == 'laporan.php') ? 'active' : ''; ?>" href="laporan.php">
                         <i class="bi bi-file-earmark-bar-graph me-1"></i> Laporan
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <?php if ($role == 'admin'): ?>
                 <li class="nav-item">

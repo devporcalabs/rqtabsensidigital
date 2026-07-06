@@ -76,7 +76,7 @@ if(isset($_POST['nis'])){
                 $pesan = buatPesan($pengaturan['pesan_masuk'], $nama, date('H:i'), $status_telat);
                 kirim_notifikasi_multi($hp_ortu, $tele_id, $email_ortu, $pesan, $pengaturan, $nis);
                 
-                echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => $foto, "pesan" => "Absen Masuk Sesi $sesi_siswa Berhasil!"]);
+                echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Absen Masuk Sesi $sesi_siswa Berhasil!"]);
             }
         } else {
             // --- LOGIKA: CEK PULANG ATAU DOUBLE SCAN ---
@@ -90,16 +90,75 @@ if(isset($_POST['nis'])){
                     $pesan = buatPesan($pengaturan['pesan_pulang'], $nama, date('H:i'), '');
                     kirim_notifikasi_multi($hp_ortu, $tele_id, $email_ortu, $pesan, $pengaturan, $nis);
                     
-                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => $foto, "pesan" => "Absen Pulang Sesi $sesi_siswa Berhasil!"]);
+                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Absen Pulang Sesi $sesi_siswa Berhasil!"]);
                 } else {
-                    echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => $kelas, "foto" => $foto, "pesan" => "Anda sudah absen pulang!"]);
+                    echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Anda sudah absen pulang!"]);
                 }
             } else {
-                echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => $kelas, "foto" => $foto, "pesan" => "Sudah absen masuk Sesi $sesi_siswa!"]);
+                echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Sudah absen masuk Sesi $sesi_siswa!"]);
             }
         }
     } else {
-        echo json_encode(["status" => "error", "nama" => "Gagal", "pesan" => "Kartu/NIS Tidak Dikenal!"]);
+        // --- 3b. CARI DATA GURU (NIP atau RFID - toleran terhadap perbedaan leading zero) ---
+        $stmt_guru = $conn->prepare("SELECT * FROM guru WHERE nip = ? OR rfid_uid = ? OR TRIM(LEADING '0' FROM nip) = ? OR TRIM(LEADING '0' FROM rfid_uid) = ?");
+        $stmt_guru->bind_param("ssss", $input, $input, $input_clean, $input_clean);
+        $stmt_guru->execute();
+        $res_guru = $stmt_guru->get_result();
+
+        if($res_guru->num_rows > 0){
+            $guru = $res_guru->fetch_assoc();
+            $nip = $guru['nip'];
+            $nama = $guru['nama'];
+            $foto = $guru['foto'];
+            $no_hp = $guru['no_hp'] ?? '';
+            $email = $guru['email'] ?? '';
+
+            // Jam Patokan Guru
+            $jam_masuk_patokan = $pengaturan['jam_masuk'];
+            $jam_pulang_patokan = $pengaturan['jam_pulang_min'];
+            
+            // --- 4. CEK DATA ABSEN HARI INI ---
+            $stmt_cek = $conn->prepare("SELECT * FROM absensi_guru WHERE nip = ? AND DATE(waktu_masuk) = ?");
+            $stmt_cek->bind_param("ss", $nip, $tgl_hari_ini);
+            $stmt_cek->execute();
+            $data_absen = $stmt_cek->get_result()->fetch_assoc();
+
+            if(!$data_absen){
+                // --- LOGIKA: ABSEN MASUK GURU ---
+                $status_telat = ($jam_sekarang > $jam_masuk_patokan) ? 'Terlambat' : 'Tepat Waktu';
+                
+                $stmt_ins = $conn->prepare("INSERT INTO absensi_guru (nip, waktu_masuk, status_kehadiran, keterangan) VALUES (?, ?, ?, 'Hadir')");
+                $stmt_ins->bind_param("sss", $nip, $waktu_lengkap, $status_telat);
+                
+                if($stmt_ins->execute()){
+                    $pesan = "Assalamualaikum. Yth. Bapak/Ibu *$nama* telah hadir di sekolah pukul *" . date('H:i') . "* ($status_telat).";
+                    kirim_notifikasi_multi($no_hp, '', $email, $pesan, $pengaturan, $nip);
+                    
+                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Absen Masuk Guru Berhasil!"]);
+                }
+            } else {
+                // --- LOGIKA: CEK PULANG ATAU DOUBLE SCAN ---
+                if($jam_sekarang >= $jam_pulang_patokan){
+                    if(empty($data_absen['waktu_pulang'])){
+                        // Update Absen Pulang
+                        $stmt_upd = $conn->prepare("UPDATE absensi_guru SET waktu_pulang = ?, keterangan = 'Hadir' WHERE id = ?");
+                        $stmt_upd->bind_param("si", $waktu_lengkap, $data_absen['id']);
+                        $stmt_upd->execute();
+                        
+                        $pesan = "Assalamualaikum. Yth. Bapak/Ibu *$nama* telah pulang dari sekolah pukul *" . date('H:i') . "*.";
+                        kirim_notifikasi_multi($no_hp, '', $email, $pesan, $pengaturan, $nip);
+                        
+                        echo json_encode(["status" => "success", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Absen Pulang Guru Berhasil!"]);
+                    } else {
+                        echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Anda sudah absen pulang!"]);
+                    }
+                } else {
+                    echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Sudah absen masuk Guru!"]);
+                }
+            }
+        } else {
+            echo json_encode(["status" => "error", "nama" => "Gagal", "pesan" => "Kartu/NIS/NIP Tidak Dikenal!"]);
+        }
     }
 }
 
