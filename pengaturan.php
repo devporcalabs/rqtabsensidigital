@@ -61,19 +61,12 @@ if(isset($_POST['test_wa'])){
     $target = preg_replace('/[^0-9]/', '', $_POST['test_nomor']); // Hanya angka
     $pesan  = "Tes Koneksi WhatsApp dari " . $data['nama_sekolah'] . " BERHASIL.\nToken dan URL API sudah valid.";
 
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-      CURLOPT_URL => $url,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_POST => true,
-      CURLOPT_POSTFIELDS => array('target' => $target, 'message' => $pesan),
-      CURLOPT_HTTPHEADER => array("Authorization: $token"),
-    ));
-    $res = curl_exec($curl);
-    curl_close($curl);
+    $res = kirim_wa($target, $pesan, $url, $token);
     
     $result = json_decode($res, true);
-    $user_msg = (isset($result['status']) && $result['status'] == true) ? "Pesan WA Terkirim!" : "Pesan WA Gagal! Periksa Konfigurasi.";
+    $is_success = (isset($result['status']) && ($result['status'] === true || $result['status'] === 'success')) || 
+                  (isset($result['success']) && $result['success'] === true);
+    $user_msg = $is_success ? "Pesan WA Terkirim!" : "Pesan WA Gagal! Periksa Konfigurasi.";
     echo "<script>alert('$user_msg'); window.location='pengaturan.php';</script>";
 }
 
@@ -327,13 +320,14 @@ include 'header.php';
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Fonnte API Token</label>
-                            <input type="password" name="wa_token" class="form-control" value="<?= xss($data['wa_token']) ?>">
+                            <label class="form-label">WhatsApp API Key</label>
+                            <input type="password" name="wa_token" class="form-control" value="<?= xss($data['wa_token']) ?>" placeholder="Masukkan API Key Gateway Anda">
                         </div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">API Endpoint URL</label>
-                        <input type="text" name="wa_api_url" class="form-control" value="<?= xss($data['wa_api_url']) ?>">
+                        <input type="text" name="wa_api_url" class="form-control" value="<?= xss($data['wa_api_url']) ?>" placeholder="Contoh: https://socket-wa.arka.web.id/api/send-message">
+                        <div class="form-text">Endpoint API WhatsApp Gateway Anda.</div>
                     </div>
 
                     <span class="section-title text-info mt-2"><i class="bi bi-telegram"></i> Konfigurasi Telegram API</span>

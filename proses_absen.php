@@ -142,16 +142,7 @@ function kirim_notifikasi_multi($hp, $tele_id, $email, $pesan, $p, $nis) {
     
     // 1. KIRIM WHATSAPP LANGSUNG
     if (!empty($hp) && !empty($p['wa_token'])) {
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => $p['wa_api_url'],
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_POST => true,
-          CURLOPT_POSTFIELDS => array('target' => $hp, 'message' => $pesan),
-          CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
-        ));
-        curl_exec($curl);
-        curl_close($curl);
+        kirim_wa($hp, $pesan, $p['wa_api_url'], $p['wa_token']);
     }
 
     // 2. KIRIM TELEGRAM LANGSUNG

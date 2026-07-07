@@ -129,7 +129,7 @@ CREATE TABLE `pengaturan` (
   `wa_token` varchar(255) DEFAULT 'sJ6yY7KFBVV2V5mqtSsV',
   `tg_bot_token` varchar(255) DEFAULT NULL,
   `pass_hapus` varchar(255) DEFAULT NULL,
-  `wa_api_url` varchar(255) DEFAULT 'https://api.fonnte.com/send',
+  `wa_api_url` varchar(255) DEFAULT 'https://socket-wa.arka.web.id/api/send-message',
   `pesan_masuk` text DEFAULT NULL,
   `pesan_pulang` text DEFAULT NULL,
   `logo_sekolah` varchar(255) DEFAULT 'logo_default.png',
@@ -149,7 +149,7 @@ CREATE TABLE `pengaturan` (
 --
 
 INSERT INTO `pengaturan` (`id`, `nama_sekolah`, `jam_masuk`, `jam_pulang_min`, `mode_absen_pulang`, `timezone`, `libur_pekanan`, `wa_mode`, `wa_token`, `tg_bot_token`, `pass_hapus`, `wa_api_url`, `pesan_masuk`, `pesan_pulang`, `logo_sekolah`, `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, `s1_masuk`, `s1_pulang`, `s2_masuk`, `s2_pulang`, `wajib_pulang`) VALUES
-(1, 'PORCALABS ABSENSI', '08:00:00', '13:50:00', 0, 'Asia/Jakarta', 'Rabu,Jumat', 1, 'sJ6yY7KFBVV2V5mqtSsV', '8373927632:AAF7i3UnoMjHIBMPo8BagRDn_8LCywO6RL8', NULL, 'https://api.fonnte.com/send', 'Assalamualaikum. wr.wb. \r\nBpk/Ibu. Menginformasikan Ananda *[nama]* telah hadir di sekolah pukul *[jam]* [telat]. ini pesan otomatis saat ananda absen agar tidak membalas pesan ini.\r\n            ', 'Assalamualaikum.\r\nBpk/Ibu. Ananda  [nama] telah pulang dari sekolah pada [jam]. ini pesan otomatis saat ananda absen agar tidak membalas pesan ini.', 'logo_1768028711.png', 'smtp.gmail.com', 587, 'solahalayubih@gmail.com', 'cxbo vsni qwmo ndeq', '06:00:00', '07:00:00', '12:30:00', '17:00:00', 1);
+(1, 'PORCALABS ABSENSI', '08:00:00', '13:50:00', 0, 'Asia/Jakarta', 'Rabu,Jumat', 1, 'sJ6yY7KFBVV2V5mqtSsV', '8373927632:AAF7i3UnoMjHIBMPo8BagRDn_8LCywO6RL8', NULL, 'https://socket-wa.arka.web.id/api/send-message', 'Assalamualaikum. wr.wb. \r\nBpk/Ibu. Menginformasikan Ananda *[nama]* telah hadir di sekolah pukul *[jam]* [telat]. ini pesan otomatis saat ananda absen agar tidak membalas pesan ini.\r\n            ', 'Assalamualaikum.\r\nBpk/Ibu. Ananda  [nama] telah pulang dari sekolah pada [jam]. ini pesan otomatis saat ananda absen agar tidak membalas pesan ini.', 'logo_1768028711.png', 'smtp.gmail.com', 587, 'solahalayubih@gmail.com', 'cxbo vsni qwmo ndeq', '06:00:00', '07:00:00', '12:30:00', '17:00:00', 1);
 
 -- --------------------------------------------------------
 

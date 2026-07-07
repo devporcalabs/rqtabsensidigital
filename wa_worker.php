@@ -41,16 +41,7 @@ while($row = mysqli_fetch_assoc($query)) {
 
     // --- A. JALUR WHATSAPP (Abaikan jika is_email_only aktif) ---
     if (!$is_email_only && !empty($no_hp) && !empty($p['wa_token'])) {
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $p['wa_api_url'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => array('target' => $no_hp, 'message' => $pesan_fix),
-            CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
-        ));
-        curl_exec($curl);
-        curl_close($curl);
+        kirim_wa($no_hp, $pesan_fix, $p['wa_api_url'], $p['wa_token']);
     }
 
     // --- B. JALUR TELEGRAM (Abaikan jika is_email_only aktif) ---

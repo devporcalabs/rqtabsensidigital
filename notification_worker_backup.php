@@ -26,16 +26,7 @@ while($row = mysqli_fetch_assoc($query)) {
     $target_email = $row['email'];
 
     // --- PROSES KIRIM WHATSAPP ---
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-        CURLOPT_URL => $p['wa_api_url'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => array('target' => $row['target'], 'message' => $pesan),
-        CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
-    ));
-    curl_exec($curl);
-    curl_close($curl);
+    kirim_wa($row['target'], $pesan, $p['wa_api_url'], $p['wa_token']);
 
     // --- PROSES KIRIM EMAIL (Penyebab Masalah Anda Ada Di Sini) ---
     if (!empty($target_email)) {
