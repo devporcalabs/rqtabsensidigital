@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'koneksi.php';
+include 'fungsi_wa.php';
 
 // Load PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
@@ -61,25 +62,7 @@ if(isset($_POST['test_wa'])){
     $target = preg_replace('/[^0-9]/', '', $_POST['test_nomor']); // Hanya angka
     $pesan  = "Tes Koneksi WhatsApp dari " . $data['nama_sekolah'] . " BERHASIL.\nToken dan URL API sudah valid.";
 
-    $body = array(
-      "api_key" => $token,
-      "receiver" => $target,
-      "data" => array("message" => $pesan)
-    );
-
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-      CURLOPT_URL => $url,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_POST => true,
-      CURLOPT_POSTFIELDS => json_encode($body),
-      CURLOPT_HTTPHEADER => array(
-        "Content-Type: application/json",
-        "Accept: */*"
-      ),
-    ));
-    $res = curl_exec($curl);
-    curl_close($curl);
+    $res = sendWa($target, $pesan, $token, $url);
     
     $result = json_decode($res, true);
     $user_msg = (isset($result['status']) && $result['status'] == true) ? "Pesan WA Terkirim!" : "Pesan WA Gagal! Periksa Konfigurasi.";
