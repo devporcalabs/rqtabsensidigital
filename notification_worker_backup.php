@@ -6,6 +6,7 @@ require 'libs/PHPMailer/src/Exception.php';
 require 'libs/PHPMailer/src/PHPMailer.php';
 require 'libs/PHPMailer/src/SMTP.php';
 include 'koneksi.php';
+include 'fungsi_wa.php';
 include 'email_template.php'; // Template HTML yang kita buat sebelumnya
 
 // 1. Ambil Pengaturan SMTP & API
@@ -26,16 +27,7 @@ while($row = mysqli_fetch_assoc($query)) {
     $target_email = $row['email'];
 
     // --- PROSES KIRIM WHATSAPP ---
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-        CURLOPT_URL => $p['wa_api_url'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => array('target' => $row['target'], 'message' => $pesan),
-        CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
-    ));
-    curl_exec($curl);
-    curl_close($curl);
+    sendWa($row['target'], $pesan, $p['wa_token'], $p['wa_api_url']);
 
     // --- PROSES KIRIM EMAIL (Penyebab Masalah Anda Ada Di Sini) ---
     if (!empty($target_email)) {

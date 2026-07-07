@@ -6,6 +6,7 @@ require 'libs/PHPMailer/src/Exception.php';
 require 'libs/PHPMailer/src/PHPMailer.php';
 require 'libs/PHPMailer/src/SMTP.php';
 include 'koneksi.php';
+include 'fungsi_wa.php';
 
 // 1. AMBIL PENGATURAN GLOBAL
 $q_set = mysqli_query($conn, "SELECT * FROM pengaturan WHERE id=1");
@@ -41,16 +42,7 @@ while($row = mysqli_fetch_assoc($query)) {
 
     // --- A. JALUR WHATSAPP (Abaikan jika is_email_only aktif) ---
     if (!$is_email_only && !empty($no_hp) && !empty($p['wa_token'])) {
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $p['wa_api_url'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => array('target' => $no_hp, 'message' => $pesan_fix),
-            CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
-        ));
-        curl_exec($curl);
-        curl_close($curl);
+        sendWa($no_hp, $pesan_fix, $p['wa_token'], $p['wa_api_url']);
     }
 
     // --- B. JALUR TELEGRAM (Abaikan jika is_email_only aktif) ---

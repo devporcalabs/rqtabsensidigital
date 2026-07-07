@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'koneksi.php';
+include 'fungsi_wa.php';
 
 // --- 1. AMBIL PENGATURAN (PREPARED STATEMENT) ---
 $stmt_set = $conn->prepare("SELECT * FROM pengaturan WHERE id = 1");
@@ -201,16 +202,7 @@ function kirim_notifikasi_multi($hp, $tele_id, $email, $pesan, $p, $nis) {
     
     // 1. KIRIM WHATSAPP LANGSUNG
     if (!empty($hp) && !empty($p['wa_token'])) {
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => $p['wa_api_url'],
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_POST => true,
-          CURLOPT_POSTFIELDS => array('target' => $hp, 'message' => $pesan),
-          CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
-        ));
-        curl_exec($curl);
-        curl_close($curl);
+        sendWa($hp, $pesan, $p['wa_token'], $p['wa_api_url']);
     }
 
     // 2. KIRIM TELEGRAM LANGSUNG
