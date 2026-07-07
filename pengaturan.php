@@ -61,13 +61,22 @@ if(isset($_POST['test_wa'])){
     $target = preg_replace('/[^0-9]/', '', $_POST['test_nomor']); // Hanya angka
     $pesan  = "Tes Koneksi WhatsApp dari " . $data['nama_sekolah'] . " BERHASIL.\nToken dan URL API sudah valid.";
 
+    $body = array(
+      "api_key" => $token,
+      "receiver" => $target,
+      "data" => array("message" => $pesan)
+    );
+
     $curl = curl_init();
     curl_setopt_array($curl, array(
       CURLOPT_URL => $url,
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_POST => true,
-      CURLOPT_POSTFIELDS => array('target' => $target, 'message' => $pesan),
-      CURLOPT_HTTPHEADER => array("Authorization: $token"),
+      CURLOPT_POSTFIELDS => json_encode($body),
+      CURLOPT_HTTPHEADER => array(
+        "Content-Type: application/json",
+        "Accept: */*"
+      ),
     ));
     $res = curl_exec($curl);
     curl_close($curl);
@@ -327,7 +336,7 @@ include 'header.php';
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Fonnte API Token</label>
+                            <label class="form-label">WA Gateway API Key</label>
                             <input type="password" name="wa_token" class="form-control" value="<?= xss($data['wa_token']) ?>">
                         </div>
                     </div>

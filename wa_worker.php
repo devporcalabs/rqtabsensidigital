@@ -41,13 +41,21 @@ while($row = mysqli_fetch_assoc($query)) {
 
     // --- A. JALUR WHATSAPP (Abaikan jika is_email_only aktif) ---
     if (!$is_email_only && !empty($no_hp) && !empty($p['wa_token'])) {
+        $body = array(
+          "api_key" => $p['wa_token'],
+          "receiver" => $no_hp,
+          "data" => array("message" => $pesan_fix)
+        );
         $curl = curl_init();
         curl_setopt_array($curl, array(
             CURLOPT_URL => $p['wa_api_url'],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => array('target' => $no_hp, 'message' => $pesan_fix),
-            CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
+            CURLOPT_POSTFIELDS => json_encode($body),
+            CURLOPT_HTTPHEADER => array(
+                "Content-Type: application/json",
+                "Accept: */*"
+            ),
         ));
         curl_exec($curl);
         curl_close($curl);

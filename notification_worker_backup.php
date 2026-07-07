@@ -26,13 +26,21 @@ while($row = mysqli_fetch_assoc($query)) {
     $target_email = $row['email'];
 
     // --- PROSES KIRIM WHATSAPP ---
+    $body = array(
+      "api_key" => $p['wa_token'],
+      "receiver" => $row['target'],
+      "data" => array("message" => $pesan)
+    );
     $curl = curl_init();
     curl_setopt_array($curl, array(
         CURLOPT_URL => $p['wa_api_url'],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => array('target' => $row['target'], 'message' => $pesan),
-        CURLOPT_HTTPHEADER => array("Authorization: " . $p['wa_token']),
+        CURLOPT_POSTFIELDS => json_encode($body),
+        CURLOPT_HTTPHEADER => array(
+            "Content-Type: application/json",
+            "Accept: */*"
+        ),
     ));
     curl_exec($curl);
     curl_close($curl);
