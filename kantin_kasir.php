@@ -255,7 +255,7 @@ include 'header.php';
     </div>
 
     <!-- MODAL KONFIRMASI PEMBAYARAN -->
-    <div class="modal fade" id="modalConfirm" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade" id="modalConfirm" tabindex="-1" data-bs-backdrop="static" data-bs-focus="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg border-0" style="border-radius: 25px; overflow:hidden;">
                 <div class="p-3 text-center fw-bold text-white fs-5" style="background: linear-gradient(90deg, #0d6efd 0%, #6610f2 100%);">
@@ -282,7 +282,7 @@ include 'header.php';
     </div>
 
     <!-- MODAL STATUS TRANSAKSI -->
-    <div class="modal fade" id="modalResult" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade" id="modalResult" tabindex="-1" data-bs-backdrop="static" data-bs-focus="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg border-0" style="border-radius: 25px; overflow:hidden;">
                 <div id="modal-header-color" class="p-3 text-center fw-bold text-white fs-5">STATUS TRANSAKSI</div>
@@ -320,8 +320,8 @@ include 'header.php';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const modalResult = new bootstrap.Modal(document.getElementById('modalResult'));
-        const modalConfirm = new bootstrap.Modal(document.getElementById('modalConfirm'));
+        const modalResult = new bootstrap.Modal(document.getElementById('modalResult'), { focus: false });
+        const modalConfirm = new bootstrap.Modal(document.getElementById('modalConfirm'), { focus: false });
         const rfidInput = document.getElementById('rfid_field');
         let currentNominal = "";
         let isProcessing = false;
@@ -511,6 +511,10 @@ include 'header.php';
 
             document.getElementById('modalConfirm').addEventListener('hidden.bs.modal', function () {
                 isReadyToScan = false;
+            });
+
+            document.getElementById('modalConfirm').addEventListener('shown.bs.modal', function () {
+                focusRFID();
             });
 
             rfidInput.addEventListener('keypress', (e) => {

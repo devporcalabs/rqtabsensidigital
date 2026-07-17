@@ -87,6 +87,51 @@ include 'header.php';
         font-size: 1.2rem; color: #64748b; transition: 0.3s;
     }
     .btn-sound-toggle.active { background: #ffc107; color: #000; }
+
+    @media (max-width: 768px) {
+        body {
+            overflow: auto !important;
+        }
+        .kiosk-container {
+            flex-direction: column;
+            height: auto;
+            width: 100%;
+        }
+        .main-display {
+            padding: 40px 20px;
+            min-height: calc(100vh - 70px);
+        }
+        .main-display h3 {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .attendance-sidebar {
+            width: 100%;
+            height: auto;
+            border-left: none;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            background: rgba(255, 255, 255, 0.6);
+            padding: 30px 20px;
+        }
+        .clock-card {
+            min-width: 80px;
+            padding: 10px 15px;
+            border-radius: 15px;
+        }
+        .flip-num {
+            font-size: 3rem;
+        }
+        .clock-group {
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .rfid-box {
+            width: 100px;
+            height: 100px;
+            font-size: 3rem;
+            margin: 30px auto 15px;
+        }
+    }
 </style>
 
 <button id="toggle-suara" class="btn-sound-toggle" title="Aktif/Matikan Suara">

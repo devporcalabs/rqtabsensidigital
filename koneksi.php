@@ -1,10 +1,17 @@
 <?php
 ob_start();
 
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "absensi";
+if (isset($_SERVER['HTTP_HOST']) && ($_SERVER['HTTP_HOST'] == 'demo-absensi.porcalabs.com' || $_SERVER['HTTP_HOST'] == '146.235.16.115')) {
+    $host = "localhost";
+    $user = "demo_absensi";
+    $pass = "dJm2xL58KieB3N5H";
+    $db   = "demo_absensi";
+} else {
+    $host = "localhost";
+    $user = "root";
+    $pass = "";
+    $db   = "absensi";
+}
 
 $conn = mysqli_connect($host, $user, $pass, $db);
 
