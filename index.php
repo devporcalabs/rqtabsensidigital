@@ -277,16 +277,22 @@ $tgl_indo = $daftar_hari[date('l')] . ', ' . date('d ') . $daftar_bulan[date('F'
                 if (d.status === 'success') {
                     $('#m-head').text("PRESENSI DITERIMA").css('background', '#10b981');
                     document.getElementById('snd-ok').play();
-                    suaraPemberitahuan("Absen berhasil. Terima kasih " + d.nama);
+                    if (d.tipe_absen === 'pulang') {
+                        suaraPemberitahuan("Terima kasih " + d.nama + ", Anda telah melakukan absen pulang. Hati-hati di jalan.");
+                    } else if (d.status_telat === 'Terlambat') {
+                        suaraPemberitahuan("Anda terlambat " + d.nama + ", Waktu yang terlewat tidak bisa kembali. Jadikan ini pelajaran untuk lebih disiplin.");
+                    } else {
+                        suaraPemberitahuan("Terima kasih " + d.nama + ", Anda telah datang tepat waktu. Disiplin adalah kunci kesuksesan.");
+                    }
                     updateLastAbsensi();
                 } else if (d.status === 'warning') {
                     $('#m-head').text("SUDAH ABSEN").css('background', '#f59e0b');
                     document.getElementById('snd-no').play();
-                    suaraPemberitahuan("Sudah absen. " + d.nama);
+                    suaraPemberitahuan("Maaf " + d.nama + ", Anda sudah melakukan absensi sebelumnya.");
                 } else {
                     $('#m-head').text("PRESENSI DITOLAK").css('background', '#ef4444');
                     document.getElementById('snd-no').play();
-                    suaraPemberitahuan("Absen gagal.");
+                    suaraPemberitahuan("Absen gagal. Kartu atau NIS tidak dikenal.");
                 }
                 modalRes.show();
                 setTimeout(() => { modalRes.hide(); isProcessing = false; focusRFID(); }, 1000);

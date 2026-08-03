@@ -318,14 +318,14 @@ while($row = mysqli_fetch_assoc($query_guru)){
         if (!isSoundEnabled) return;
         window.speechSynthesis.cancel();
         const msg  = new SpeechSynthesisUtterance(teks);
-        msg.lang   = 'en-US';
-        msg.rate   = 1.1;
+        msg.lang   = 'id-ID';
+        msg.rate   = 1.0;
         
-        // Cari suara bahasa Inggris
+        // Cari suara bahasa Indonesia
         const voices = window.speechSynthesis.getVoices();
-        const suaraEng = voices.find(v => v.lang === 'en-US' || v.lang.startsWith('en-') || v.lang.startsWith('en_') || v.name.toLowerCase().includes('english'));
-        if (suaraEng) {
-            msg.voice = suaraEng;
+        const suaraId = voices.find(v => v.lang === 'id-ID' || v.lang.startsWith('id-') || v.lang.startsWith('id_') || v.name.toLowerCase().includes('indonesia'));
+        if (suaraId) {
+            msg.voice = suaraId;
         }
         
         window.speechSynthesis.speak(msg);
@@ -664,13 +664,19 @@ while($row = mysqli_fetch_assoc($query_guru)){
 
                 if (d.status === 'success') {
                     if (isSoundEnabled) document.getElementById('snd-success').play();
-                    bicara('Attendance successful. Thank you, ' + d.nama);
+                    if (d.tipe_absen === 'pulang') {
+                        bicara("Terima kasih " + (d.nama || "Siswa") + ", Anda telah melakukan absen pulang. Hati-hati di jalan.");
+                    } else if (d.status_telat === 'Terlambat') {
+                        bicara("Anda terlambat " + (d.nama || "Siswa") + ", Waktu yang terlewat tidak bisa kembali. Jadikan ini pelajaran untuk lebih disiplin.");
+                    } else {
+                        bicara("Terima kasih " + (d.nama || "Siswa") + ", Anda telah datang tepat waktu. Disiplin adalah kunci kesuksesan.");
+                    }
                 } else if (d.status === 'warning') {
                     if (isSoundEnabled) document.getElementById('snd-fail').play();
-                    bicara('Already checked in. ' + d.nama);
+                    bicara("Maaf " + (d.nama || "Siswa") + ", Anda sudah melakukan absensi sebelumnya.");
                 } else {
                     if (isSoundEnabled) document.getElementById('snd-fail').play();
-                    bicara('Attendance failed.');
+                    bicara("Absen gagal. Kartu atau NIS tidak dikenal.");
                 }
 
                 modalAbsen.show();

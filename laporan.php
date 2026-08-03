@@ -218,9 +218,9 @@ include 'header.php';
                 </div>
                 <?php if($role != 'walikelas'): ?>
                 <div class="col-md-2">
-                    <label class="small fw-800 text-muted mb-2 text-uppercase">Kelas</label>
+                    <label class="small fw-800 text-muted mb-2 text-uppercase">Lembaga</label>
                     <select name="kelas" class="form-select">
-                        <option value="">Semua Kelas</option>
+                        <option value="">Semua Lembaga</option>
                         <?php while($k = mysqli_fetch_assoc($q_kelas)): ?>
                             <option value="<?= xss($k['nama_kelas']) ?>" <?= $kelas_filter == $k['nama_kelas'] ? 'selected' : '' ?>><?= xss($k['nama_kelas']) ?></option>
                         <?php endwhile; ?>
@@ -292,7 +292,13 @@ include 'header.php';
                             if ($mode == 'harian'):
                                 $jam_m = $row['waktu_masuk'] ? date('H:i', strtotime($row['waktu_masuk'])) : '-';
                                 $jam_p = $row['waktu_pulang'] ? date('H:i', strtotime($row['waktu_pulang'])) : '-';
-                                $jam_pulang_patokan = ($row['sesi'] == '1') ? $sett['s1_pulang'] : $sett['s2_pulang'];
+                                if ($row['sesi'] == '1') {
+                                    $jam_pulang_patokan = $sett['s1_pulang'];
+                                } elseif ($row['sesi'] == '2') {
+                                    $jam_pulang_patokan = $sett['s2_pulang'];
+                                } else {
+                                    $jam_pulang_patokan = $sett['s3_pulang'];
+                                }
 
                                 if(!$row['waktu_masuk']) {
                                     $st = "ALPHA"; $css = "st-alpha";

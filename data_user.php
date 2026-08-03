@@ -108,6 +108,14 @@ if(isset($_POST['simpan'])){
         // --- PROSES TAMBAH ---
         if(empty($password_baru)){ echo "<script>alert('Password wajib diisi!');</script>"; }
         else {
+            // --- PENCEGAT BATAS MAKSIMAL USER (MAX 25 USER) ---
+            $q_ulimit = mysqli_query($conn, "SELECT COUNT(*) as total FROM users");
+            $row_ulimit = mysqli_fetch_assoc($q_ulimit);
+            if (($row_ulimit['total'] ?? 0) >= 25) {
+                echo "<script>alert('Gagal! Batas maksimal 25 user telah tercapai. Tidak dapat menambah user baru.'); window.location='data_user.php';</script>";
+                exit;
+            }
+
             $stmt_cek = $conn->prepare("SELECT id FROM users WHERE username=?");
             $stmt_cek->bind_param("s", $username);
             $stmt_cek->execute();

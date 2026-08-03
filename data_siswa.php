@@ -94,6 +94,11 @@ $stmt_main->bind_param($types, ...$params);
 $stmt_main->execute();
 $data_siswa = $stmt_main->get_result();
 
+// --- PENCEGAT & INFORMASI BATAS SISWA (MAX 150 SISWA) ---
+$q_tot_all = mysqli_query($conn, "SELECT COUNT(*) as total FROM siswa");
+$total_siswa_db = (int)(mysqli_fetch_assoc($q_tot_all)['total'] ?? 0);
+$is_kuota_penuh = ($total_siswa_db >= 150);
+
 include 'header.php'; 
 ?>
 <!DOCTYPE html>
@@ -106,65 +111,105 @@ include 'header.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f0f3f9;
-            background-image: radial-gradient(at 0% 0%, rgba(13, 110, 253, 0.05) 0px, transparent 50%);
-            min-height: 100vh;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 25px;
-        }
-
-        .btn-action {
-            border-radius: 18px;
-            font-weight: 700;
-            transition: 0.3s;
-            border: 1px solid rgba(255,255,255,0.4);
-            backdrop-filter: blur(5px);
-        }
-
-        .btn-action:hover {
-            transform: translateY(-3px);
-            background-color: rgba(255,255,255,0.9);
-        }
-
         #formTambah { display: none; }
 
-        .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 12px;
+        /* Quick Actions Mockup Look */
+        .quick-action-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.25rem;
+            transition: all 0.2s;
+        }
+        .quick-action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border-color: #cbd5e1;
+        }
+        .quick-action-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+        .quick-action-icon.green { background-color: #ecfdf5; color: #10b981; }
+        .quick-action-icon.orange { background-color: #fffbeb; color: #f59e0b; }
+        .quick-action-icon.cyan { background-color: #ecfeff; color: #06b6d4; }
+        .quick-action-icon.blue { background-color: #eff6ff; color: #3b82f6; }
+
+        .quick-action-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+        .quick-action-title {
+            font-size: 0.85rem;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        /* Action Buttons Circle */
+        .btn-action-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            color: #64748b;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            padding: 0;
+            text-decoration: none;
+        }
+        .btn-action-circle:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+        .btn-action-circle.blue { color: #3b82f6; border-color: #dbeafe; background: #eff6ff; }
+        .btn-action-circle.green { color: #10b981; border-color: #d1fae5; background: #ecfdf5; }
+        .btn-action-circle.cyan { color: #06b6d4; border-color: #cffafe; background: #ecfeff; }
+        .btn-action-circle.gray { color: #64748b; border-color: #e2e8f0; background: #f8fafc; }
+        .btn-action-circle.red { color: #ef4444; border-color: #fee2e2; background: #fee2e2; }
+
+        /* Badge custom classes */
+        .badge-kelas {
+            background-color: #eff6ff !important;
+            color: #3b82f6 !important;
+            font-weight: 700 !important;
+            font-size: 0.75rem !important;
+            padding: 0.35rem 0.75rem !important;
+            border-radius: 8px !important;
+            border: none !important;
         }
 
         .photo-circle { 
-            width: 48px; height: 48px; 
-            border-radius: 12px; 
-            background: #fff; 
+            width: 40px; height: 40px; 
+            border-radius: 50%; 
+            background: #f1f5f9; 
             overflow: hidden; 
             border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .photo-circle img { width: 100%; height: 100%; object-fit: cover; }
 
-        .table thead th { 
-            background: rgba(13, 110, 253, 0.05); 
-            color: #0d6efd;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            border: none;
-            padding: 15px;
-        }
-
         #live-clock {
-            background: rgba(255, 255, 255, 0.5);
-            padding: 5px 15px;
-            border-radius: 10px;
-            font-weight: 800;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 700;
         }
 
         /* Dropdown Styling */
@@ -175,51 +220,61 @@ include 'header.php';
 <body>
 
 <div class="container py-4">
+    <!-- Header Row -->
     <div class="glass-card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col-md-7">
-                <h3 class="fw-bold mb-1 text-primary">Manajemen Data Siswa</h3>
+                <h3 class="fw-extrabold text-dark mb-1" style="font-weight: 800; letter-spacing: -0.5px;">Manajemen Data Siswa</h3>
                 <p class="text-muted mb-0 small"><?= $tgl_indo ?> | <span id="live-clock">--:--:--</span></p>
             </div>
             <div class="col-md-5 text-md-end mt-3 mt-md-0">
-                <button onclick="toggleForm()" class="btn btn-primary btn-action px-4 py-2">
-                    <i class="bi bi-person-plus-fill me-2"></i> Tambah Siswa
+                <button onclick="toggleForm()" class="btn <?= $is_kuota_penuh ? 'btn-secondary' : 'btn-primary' ?> px-4 py-2.5 rounded-pill fw-bold">
+                    <i class="bi <?= $is_kuota_penuh ? 'bi-lock-fill' : 'bi-plus' ?> me-1"></i> <?= $is_kuota_penuh ? 'Kuota Penuh ('.$total_siswa_db.'/150)' : '+ Tambah Siswa' ?>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Quick Actions Row -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <a href="import_siswa.php" class="btn btn-success w-100 btn-action py-3 bg-opacity-75">
-                <div class="small opacity-75">Data Masal</div>
-                <i class="bi bi-file-earmark-excel me-1"></i> Import Siswa
+        <!-- 1. Import Siswa -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <a href="import_siswa.php" class="quick-action-card text-decoration-none" <?= $is_kuota_penuh ? 'onclick="alert(\'Gagal! Kuota maksimal 150 siswa telah penuh ('.$total_siswa_db.'/150). Silakan hapus data siswa terlebih dahulu.\'); return false;"' : '' ?>>
+                <div class="quick-action-icon green"><i class="bi bi-arrow-down-short"></i></div>
+                <div>
+                    <div class="quick-action-label">Data Masal</div>
+                    <div class="quick-action-title">Import Siswa</div>
+                </div>
             </a>
         </div>
-        <div class="col-6 col-md-3">
-            <a href="bulk_update_sesi.php" class="btn btn-warning w-100 btn-action py-3 text-white bg-opacity-75">
-                <div class="small opacity-75">Pengaturan</div>
-                <i class="bi bi-clock-history me-1"></i> Atur Sesi
+        <!-- 2. Atur Sesi -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <a href="bulk_update_sesi.php" class="quick-action-card text-decoration-none">
+                <div class="quick-action-icon orange"><i class="bi bi-clock"></i></div>
+                <div>
+                    <div class="quick-action-label">Pengaturan</div>
+                    <div class="quick-action-title">Atur Sesi</div>
+                </div>
             </a>
         </div>
-        <div class="col-6 col-md-3">
-            <button data-bs-toggle="modal" data-bs-target="#modalCetak" class="btn btn-info w-100 btn-action py-3 text-white bg-opacity-75">
-                <div class="small opacity-75">Kartu ID</div>
-                <i class="bi bi-printer me-1"></i> Cetak Kartu
-            </button>
+        <!-- 3. Cetak Kartu -->
+        <div class="col-12 col-sm-6 col-md-3" style="cursor: pointer;">
+            <div data-bs-toggle="modal" data-bs-target="#modalCetak" class="quick-action-card text-decoration-none">
+                <div class="quick-action-icon cyan"><i class="bi bi-credit-card-2-front"></i></div>
+                <div>
+                    <div class="quick-action-label">Kartu ID</div>
+                    <div class="quick-action-title">Cetak Kartu</div>
+                </div>
+            </div>
         </div>
-        
-        <!-- <div class="col-6 col-md-3">
-            <a href="data_kelas.php" class="btn btn-secondary w-100 btn-action py-3 bg-opacity-75">
-                <div class="small opacity-75">Manajemen</div>
-                <i class="bi bi-building me-1"></i> Data Kelas
-            </a>
-        </div> -->
-
-        <div class="col-6 col-md-3">
-            <a href="export_siswa_excel.php?kelas=<?= xss($kelas_filter) ?>&q=<?= xss($keyword) ?>" class="btn btn-primary w-100 btn-action py-3 bg-opacity-75" style="background-color: #1d6f42 !important;">
-                <div class="small opacity-75">Download</div>
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Data Siswa
+        <!-- 4. Data Siswa Download -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <a href="export_siswa_excel.php?kelas=<?= xss($kelas_filter) ?>&q=<?= xss($keyword) ?>" class="quick-action-card text-decoration-none">
+                <div class="quick-action-icon blue"><i class="bi bi-download"></i></div>
+                <div>
+                    <div class="quick-action-label">Download</div>
+                    <div class="quick-action-title">Data Siswa</div>
+                </div>
             </a>
         </div>
     </div>
@@ -260,7 +315,7 @@ include 'header.php';
                     
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label class="small fw-bold">Kelas</label>
+                            <label class="small fw-bold">Lembaga</label>
                             <select name="kelas" class="form-select" required>
                                 <option value="">-- Pilih --</option>
                                 <?php 
@@ -274,6 +329,7 @@ include 'header.php';
                             <select name="sesi" class="form-select">
                                 <option value="1">Sesi 1</option>
                                 <option value="2">Sesi 2</option>
+                                <option value="3">Sesi 3</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -301,23 +357,28 @@ include 'header.php';
     </div>
 
     <div class="glass-card p-4">
+        <!-- Table Header Row -->
         <div class="row g-3 mb-4 align-items-center">
             <div class="col-md-6">
-                <h5 class="fw-bold m-0 text-dark">Daftar Siswa <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-2"><?= $total_data ?></span></h5>
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="fw-bold m-0 text-dark" style="font-size: 1.1rem;">Daftar Siswa</h5>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 text-xs fw-bold" style="font-size: 0.75rem;"><?= $total_data ?></span>
+                </div>
             </div>
             <div class="col-md-6">
-                <form method="GET" class="d-flex gap-2">
-                    <select name="kelas" class="form-select form-select-sm w-auto border-0 shadow-sm">
-                        <option value="">Semua Kelas</option>
+                <form method="GET" class="d-flex align-items-center justify-content-md-end gap-2 m-0">
+                    <select name="kelas" class="form-select w-auto border-0 bg-light rounded-pill px-3 py-2" style="font-size: 0.85rem; height: 38px;" onchange="this.form.submit()">
+                        <option value="">Semua Lembaga</option>
                         <?php 
                         $q_k3 = mysqli_query($conn, "SELECT * FROM kelas ORDER BY nama_kelas ASC");
                         while($k3 = mysqli_fetch_assoc($q_k3)): ?>
                             <option value="<?= xss($k3['nama_kelas']) ?>" <?= ($kelas_filter == $k3['nama_kelas']) ? 'selected' : '' ?>><?= xss($k3['nama_kelas']) ?></option>
                         <?php endwhile; ?>
                     </select>
-                    <div class="input-group input-group-sm shadow-sm">
-                        <input type="text" name="q" class="form-control border-0" placeholder="Cari..." value="<?= xss($keyword) ?>">
-                        <button class="btn btn-white bg-white border-0" type="submit"><i class="bi bi-search text-primary"></i></button>
+                    
+                    <div class="position-relative">
+                        <input type="text" name="q" class="form-control border-0 bg-light rounded-pill ps-3 pe-5" style="font-size: 0.85rem; height: 38px; width: 200px;" placeholder="Cari siswa..." value="<?= xss($keyword) ?>">
+                        <button type="submit" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted p-0 me-3"><i class="bi bi-search" style="font-size: 0.85rem;"></i></button>
                     </div>
                 </form>
             </div>
@@ -327,43 +388,44 @@ include 'header.php';
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th class="text-center" width="5%">FOTO</th>
+                        <th class="ps-3" width="8%">FOTO</th>
                         <th>NAMA & IDENTITAS</th>
-                        <th class="text-center">KELAS</th>
+                        <th class="text-center">LEMBAGA</th>
                         <th class="text-center">SALDO</th>
-                        <th class="text-center">AKSI</th>
+                        <th class="text-center" width="25%">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if($data_siswa->num_rows > 0): ?>
                         <?php while($row = $data_siswa->fetch_assoc()): ?>
                         <tr class="border-bottom border-white border-opacity-50">
-                            <td class="text-center">
-                                <div class="photo-circle mx-auto">
-                                    <?php $foto = "img/siswa/" . $row['foto']; if (!empty($row['foto']) && file_exists($foto)): ?>
-                                        <img src="<?= $foto ?>">
-                                    <?php else: ?><i class="bi bi-person text-muted fs-4"></i><?php endif; ?>
+                            <td class="ps-3">
+                                <div class="photo-circle">
+                                    <?php $foto_rel = "img/siswa/" . $row['foto']; $foto_abs = __DIR__ . "/" . $foto_rel; if (!empty($row['foto']) && $row['foto'] != 'default.jpg' && file_exists($foto_abs)): ?>
+                                        <img src="<?= $foto_rel ?>">
+                                    <?php else: ?><i class="bi bi-person text-muted fs-5"></i><?php endif; ?>
                                 </div>
                             </td>
                             <td>
-                                <div class="fw-bold text-dark"><?= xss($row['nama']) ?></div>
-                                <code class="small text-muted"><?= xss($row['nis']) ?></code>
+                                <div class="fw-bold text-dark" style="font-size: 0.9rem;"><?= xss($row['nama']) ?></div>
+                                <div class="small text-muted" style="font-size: 0.75rem; font-weight: 500;"><?= xss($row['nis']) ?></div>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-white text-primary border border-primary border-opacity-25 rounded-pill px-3"><?= xss($row['kelas']) ?></span>
+                                <span class="badge badge-kelas"><?= xss($row['kelas']) ?></span>
                             </td>
-                            <td class="text-center fw-bold text-success">
+                            <td class="text-center fw-bold text-success" style="font-size: 0.9rem;">
                                 Rp <?= number_format($row['saldo'] ?? 0, 0, ',', '.') ?>
                             </td>
                             <td class="text-center">
-                                <div class="btn-group gap-1">
-                                    <button type="button" class="btn btn-sm btn-light border text-primary rounded-3 btn-detail-siswa" 
+                                <div class="d-flex align-items-center justify-content-center gap-1.5">
+                                    <!-- 1. Detail -->
+                                    <button type="button" class="btn-action-circle blue btn-detail-siswa" 
                                             title="Detail Siswa"
                                             data-nama="<?= xss($row['nama']) ?>"
                                             data-nis="<?= xss($row['nis']) ?>"
                                             data-rfid="<?= xss($row['rfid_uid'] ?? '-') ?>"
                                             data-kelas="<?= xss($row['kelas']) ?>"
-                                            data-sesi="<?= xss($row['sesi'] == '2' ? 'Sesi 2 (Siang)' : 'Sesi 1 (Pagi)') ?>"
+                                            data-sesi="<?= xss($row['sesi'] == '2' ? 'Sesi 2 (Siang)' : ($row['sesi'] == '3' ? 'Sesi 3 (Pagi)' : 'Sesi 1 (Pagi)')) ?>"
                                             data-hp="<?= xss($row['no_hp_ortu'] ?? '-') ?>"
                                             data-telegram="<?= xss($row['telegram_chat_id'] ?? '-') ?>"
                                             data-email="<?= xss($row['email'] ?? '-') ?>"
@@ -372,29 +434,34 @@ include 'header.php';
                                         <i class="bi bi-eye"></i>
                                     </button>
 
-                                    <a href="kantin_topup.php?nis=<?= $row['nis'] ?>" class="btn btn-sm btn-light border text-success rounded-3" title="Top Up Saldo">
+                                    <!-- 2. Top Up -->
+                                    <a href="kantin_topup.php?nis=<?= $row['nis'] ?>" class="btn-action-circle green" title="Top Up Saldo">
                                         <i class="bi bi-wallet2"></i>
                                     </a>
 
-                                    <a href="daftar_wajah.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-light border text-info rounded-3" title="Rekam Wajah">
-                                        <i class="bi bi-person-bounding-box"></i>
+                                    <!-- 3. Rekam Wajah -->
+                                    <a href="daftar_wajah.php?id=<?= $row['id'] ?>" class="btn-action-circle cyan" title="Rekam Wajah">
+                                        <i class="bi bi-camera"></i>
                                     </a>
 
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-light border text-dark rounded-3" data-bs-toggle="dropdown" title="Cetak Kartu">
+                                    <!-- 4. Cetak -->
+                                    <div class="dropdown d-inline-block">
+                                        <button type="button" class="btn-action-circle gray" data-bs-toggle="dropdown" title="Cetak Kartu">
                                             <i class="bi bi-printer"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow">
-                                            <li><a class="dropdown-item" href="cetak_kartu.php?id=<?= $row['id'] ?>&tipe=siswa" target="_blank"><i class="bi bi-person-vcard text-primary me-2"></i>Kartu Siswa</a></li>
-                                            <li><a class="dropdown-item" href="cetak_kartu.php?id=<?= $row['id'] ?>&tipe=guru" target="_blank"><i class="bi bi-person-badge text-danger me-2"></i>Kartu Guru</a></li>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li><a class="dropdown-item py-2 px-3 rounded" href="cetak_kartu.php?id=<?= $row['id'] ?>&tipe=siswa" target="_blank"><i class="bi bi-person-vcard text-primary me-2"></i>Kartu Siswa</a></li>
+                                            <li><a class="dropdown-item py-2 px-3 rounded" href="cetak_kartu.php?id=<?= $row['id'] ?>&tipe=guru" target="_blank"><i class="bi bi-person-badge text-danger me-2"></i>Kartu Guru</a></li>
                                         </ul>
                                     </div>
 
-                                    <a href="edit_siswa.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-light border text-primary rounded-3" title="Edit Data">
-                                        <i class="bi bi-pencil-square"></i>
+                                    <!-- 5. Edit -->
+                                    <a href="edit_siswa.php?id=<?= $row['id'] ?>" class="btn-action-circle blue" title="Edit Data">
+                                        <i class="bi bi-pencil"></i>
                                     </a>
 
-                                    <a href="data_siswa.php?hapus_id=<?= $row['id'] ?>&token=<?= $_SESSION['csrf_token'] ?>" class="btn btn-sm btn-light border text-danger rounded-3" onclick="return confirm('Hapus permanen?')" title="Hapus Data">
+                                    <!-- 6. Hapus -->
+                                    <a href="data_siswa.php?hapus_id=<?= $row['id'] ?>&token=<?= $_SESSION['csrf_token'] ?>" class="btn-action-circle red" onclick="return confirm('Hapus permanen?')" title="Hapus Data">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 </div>
@@ -427,9 +494,9 @@ include 'header.php';
       </div>
       <form action="cetak_kelas.php" method="GET" target="_blank">
           <div class="modal-body">
-              <label class="small fw-bold mb-2">Pilih Kelas</label>
+              <label class="small fw-bold mb-2">Pilih Lembaga</label>
               <select name="kelas" class="form-select py-3 border-0 bg-light rounded-4" required>
-                  <option value="">-- Pilih Kelas --</option>
+                  <option value="">-- Pilih Lembaga --</option>
                   <?php 
                   $q_m = mysqli_query($conn, "SELECT * FROM kelas ORDER BY nama_kelas ASC");
                   while($m = mysqli_fetch_assoc($q_m)) echo "<option value='".xss($m['nama_kelas'])."'>".xss($m['nama_kelas'])."</option>";
@@ -456,6 +523,10 @@ include 'header.php';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function toggleForm() {
+        <?php if($is_kuota_penuh): ?>
+        alert("Gagal! Batas maksimal kuota 150 siswa telah tercapai (Saat ini: <?= $total_siswa_db ?>/150).\n\nTidak dapat menambah siswa baru. Silakan hapus data siswa yang ada terlebih dahulu.");
+        return;
+        <?php endif; ?>
         const form = document.getElementById('formTambah');
         if (form.style.display === 'none' || form.style.display === '') {
             form.style.display = 'block';
@@ -488,7 +559,7 @@ include 'header.php';
         const kelas = selectKelas.value;
 
         if (!kelas || kelas === "") {
-            alert("Pilih kelas terlebih dahulu di dalam modal!");
+            alert("Pilih lembaga terlebih dahulu di dalam modal!");
             return;
         }
 

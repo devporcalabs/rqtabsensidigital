@@ -40,6 +40,14 @@ function compressAndResize($source, $destination, $quality) {
 }
 
 if(isset($_POST['tambah'])){
+    // --- 0. PENCEGAT BATAS MAKSIMAL SISWA (MAX 150 SISWA) ---
+    $q_limit = mysqli_query($conn, "SELECT COUNT(*) as total FROM siswa");
+    $row_limit = mysqli_fetch_assoc($q_limit);
+    if (($row_limit['total'] ?? 0) >= 150) {
+        echo "<script>alert('Gagal! Batas maksimal kuota (150 siswa) telah tercapai. Tidak dapat menambah siswa baru.'); window.history.back();</script>";
+        exit;
+    }
+
     // Tangkap data
     $nis   = $_POST['nis'];
     $rfid  = $_POST['rfid_uid'];
@@ -66,12 +74,12 @@ if(isset($_POST['tambah'])){
     if (!empty($_FILES['foto']['name'])) {
         $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
         $foto_name = "siswa_" . $nis . "_" . time() . ".jpg";
-        $target_path = "img/siswa/" . $foto_name;
+        $target_path = __DIR__ . "/img/siswa/" . $foto_name;
         
         $upload = compressAndResize($_FILES['foto']['tmp_name'], $target_path, 75);
         
         if(!$upload) {
-            echo "<script>alert('Gagal memproses gambar!'); window.history.back();</script>";
+            echo "<script>alert('Gagal memproses gambar! Pastikan file berformat JPG/PNG.'); window.history.back();</script>";
             exit;
         }
     }

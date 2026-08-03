@@ -29,6 +29,12 @@ if($pengaturan['wajib_pulang'] == 1){
                       WHERE s.sesi = '2' AND DATE(a.waktu_masuk) = '$tgl_hari_ini' 
                       AND a.waktu_pulang IS NULL AND a.keterangan = 'Hadir'");
     }
+    // Sesi 3
+    if($jam_sekarang > $pengaturan['s3_pulang']){
+        $conn->query("UPDATE absensi a JOIN siswa s ON a.nis = s.nis SET a.keterangan = 'Bolos' 
+                      WHERE s.sesi = '3' AND DATE(a.waktu_masuk) = '$tgl_hari_ini' 
+                      AND a.waktu_pulang IS NULL AND a.keterangan = 'Hadir'");
+    }
 }
 
 if(isset($_POST['nis'])){
@@ -57,8 +63,16 @@ if(isset($_POST['nis'])){
         $sesi_siswa = $siswa['sesi']; 
 
         // Patokan Jam Sesi
-        $jam_masuk_patokan = ($sesi_siswa == '1') ? $pengaturan['s1_masuk'] : $pengaturan['s2_masuk'];
-        $jam_pulang_patokan = ($sesi_siswa == '1') ? $pengaturan['s1_pulang'] : $pengaturan['s2_pulang'];
+        if ($sesi_siswa == '1') {
+            $jam_masuk_patokan = $pengaturan['s1_masuk'];
+            $jam_pulang_patokan = $pengaturan['s1_pulang'];
+        } elseif ($sesi_siswa == '2') {
+            $jam_masuk_patokan = $pengaturan['s2_masuk'];
+            $jam_pulang_patokan = $pengaturan['s2_pulang'];
+        } else {
+            $jam_masuk_patokan = $pengaturan['s3_masuk'];
+            $jam_pulang_patokan = $pengaturan['s3_pulang'];
+        }
         
         // --- 4. CEK DATA ABSEN HARI INI ---
         $stmt_cek = $conn->prepare("SELECT * FROM absensi WHERE nis = ? AND DATE(waktu_masuk) = ?");
@@ -77,7 +91,7 @@ if(isset($_POST['nis'])){
                 $pesan = buatPesan($pengaturan['pesan_masuk'], $nama, date('H:i'), $status_telat);
                 kirim_notifikasi_multi($hp_ortu, $tele_id, $email_ortu, $pesan, $pengaturan, $nis);
                 
-                echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Absen Masuk Sesi $sesi_siswa Berhasil!"]);
+                echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Absen Masuk Sesi $sesi_siswa Berhasil!", "status_telat" => $status_telat, "tipe_absen" => "masuk"]);
             }
         } else {
             // --- LOGIKA: CEK PULANG ATAU DOUBLE SCAN ---
@@ -91,7 +105,7 @@ if(isset($_POST['nis'])){
                     $pesan = buatPesan($pengaturan['pesan_pulang'], $nama, date('H:i'), '');
                     kirim_notifikasi_multi($hp_ortu, $tele_id, $email_ortu, $pesan, $pengaturan, $nis);
                     
-                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Absen Pulang Sesi $sesi_siswa Berhasil!"]);
+                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Absen Pulang Sesi $sesi_siswa Berhasil!", "status_telat" => "Tepat Waktu", "tipe_absen" => "pulang"]);
                 } else {
                     echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => $kelas, "foto" => "siswa/" . $foto, "pesan" => "Anda sudah absen pulang!"]);
                 }
@@ -135,7 +149,7 @@ if(isset($_POST['nis'])){
                     $pesan = "Assalamualaikum. Yth. Bapak/Ibu *$nama* telah hadir di sekolah pukul *" . date('H:i') . "* ($status_telat).";
                     kirim_notifikasi_multi($no_hp, '', $email, $pesan, $pengaturan, $nip);
                     
-                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Absen Masuk Guru Berhasil!"]);
+                    echo json_encode(["status" => "success", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Absen Masuk Guru Berhasil!", "status_telat" => $status_telat, "tipe_absen" => "masuk"]);
                 }
             } else {
                 // --- LOGIKA: CEK PULANG ATAU DOUBLE SCAN ---
@@ -149,7 +163,7 @@ if(isset($_POST['nis'])){
                         $pesan = "Assalamualaikum. Yth. Bapak/Ibu *$nama* telah pulang dari sekolah pukul *" . date('H:i') . "*.";
                         kirim_notifikasi_multi($no_hp, '', $email, $pesan, $pengaturan, $nip);
                         
-                        echo json_encode(["status" => "success", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Absen Pulang Guru Berhasil!"]);
+                        echo json_encode(["status" => "success", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Absen Pulang Guru Berhasil!", "tipe_absen" => "pulang"]);
                     } else {
                         echo json_encode(["status" => "warning", "nama" => $nama, "kelas" => "Guru", "foto" => "guru/" . $foto, "pesan" => "Anda sudah absen pulang!"]);
                     }

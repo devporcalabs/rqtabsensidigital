@@ -16,7 +16,7 @@ $set = mysqli_fetch_assoc(mysqli_query($conn, "SELECT nama_sekolah FROM pengatur
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Kartu Kelas <?= $kelas ?></title>
+    <title>Cetak Kartu Lembaga <?= $kelas ?></title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     

@@ -183,9 +183,9 @@ include 'header.php';
             
             <?php if($role == 'admin' || $role == 'piket'): ?>
             <div class="col-md-4">
-                <label class="small fw-bold text-muted mb-2">PILIH KELAS</label>
+                <label class="small fw-bold text-muted mb-2">PILIH LEMBAGA</label>
                 <select name="kelas" class="form-select">
-                    <option value="">-- Pilih Kelas --</option>
+                    <option value="">-- Pilih Lembaga --</option>
                     <?php while($k = mysqli_fetch_assoc($q_kelas)): ?>
                         <option value="<?= xss($k['nama_kelas']) ?>" <?= $kelas_pilih == $k['nama_kelas'] ? 'selected' : '' ?>><?= xss($k['nama_kelas']) ?></option>
                     <?php endwhile; ?>
@@ -193,8 +193,8 @@ include 'header.php';
             </div>
             <?php else: ?>
             <div class="col-md-4">
-                <label class="small fw-bold text-muted mb-2">KELAS ANDA</label>
-                <input type="text" class="form-control fw-bold text-primary" value="<?= xss($kelas_pilih ?: 'Kelas Belum Diatur') ?>" readonly>
+                <label class="small fw-bold text-muted mb-2">LEMBAGA ANDA</label>
+                <input type="text" class="form-control fw-bold text-primary" value="<?= xss($kelas_pilih ?: 'Lembaga Belum Diatur') ?>" readonly>
             </div>
             <?php endif; ?>
 
@@ -271,7 +271,7 @@ include 'header.php';
     </form>
     <?php elseif($kelas_pilih != '' && count($data_siswa) == 0): ?>
         <div class="glass-card p-5 text-center mt-4">
-            <h5 class="text-muted">Data siswa tidak ditemukan untuk kelas <?= xss($kelas_pilih) ?>.</h5>
+            <h5 class="text-muted">Data siswa tidak ditemukan untuk lembaga <?= xss($kelas_pilih) ?>.</h5>
         </div>
     <?php endif; ?>
 

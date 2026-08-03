@@ -40,7 +40,7 @@ include 'header.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Kelas - Porcalabs</title>
+    <title>Monitoring Lembaga - Porcalabs</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -103,7 +103,7 @@ include 'header.php';
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th class="ps-4">Nama Kelas</th>
+                        <th class="ps-4">Nama Lembaga</th>
                         <th class="text-center">Total Siswa</th>
                         <th class="text-center">Hadir</th>
                         <th class="text-center">Telat</th>

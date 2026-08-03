@@ -10,7 +10,7 @@ if (isset($_SERVER['HTTP_HOST']) && ($_SERVER['HTTP_HOST'] == 'demo-absensi.porc
     $host = "localhost";
     $user = "root";
     $pass = "";
-    $db   = "absensi";
+    $db   = "absensi_rqtemi";
 }
 
 $conn = mysqli_connect($host, $user, $pass, $db);

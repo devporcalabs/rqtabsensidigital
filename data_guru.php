@@ -94,6 +94,19 @@ $stmt_main->bind_param($types, ...$params);
 $stmt_main->execute();
 $data_guru = $stmt_main->get_result();
 
+// --- STATISTIK GURU ---
+$q_tot_guru = mysqli_query($conn, "SELECT COUNT(*) as total FROM guru");
+$total_guru = (int)(mysqli_fetch_assoc($q_tot_guru)['total'] ?? 0);
+
+$q_wali = mysqli_query($conn, "SELECT COUNT(*) as total FROM guru WHERE jabatan = 'Wali Kelas' OR jabatan LIKE '%Wali%'");
+$total_wali = (int)(mysqli_fetch_assoc($q_wali)['total'] ?? 0);
+
+$q_bio = mysqli_query($conn, "SELECT COUNT(*) as total FROM guru WHERE face_embedding IS NOT NULL AND face_embedding != ''");
+$total_bio = (int)(mysqli_fetch_assoc($q_bio)['total'] ?? 0);
+
+$q_rfid = mysqli_query($conn, "SELECT COUNT(*) as total FROM guru WHERE rfid_uid IS NOT NULL AND rfid_uid != ''");
+$total_rfid = (int)(mysqli_fetch_assoc($q_rfid)['total'] ?? 0);
+
 include 'header.php'; 
 ?>
 <!DOCTYPE html>
@@ -106,65 +119,63 @@ include 'header.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f0f3f9;
-            background-image: radial-gradient(at 0% 0%, rgba(13, 110, 253, 0.05) 0px, transparent 50%);
-            min-height: 100vh;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 25px;
-        }
-
-        .btn-action {
-            border-radius: 18px;
-            font-weight: 700;
-            transition: 0.3s;
-            border: 1px solid rgba(255,255,255,0.4);
-            backdrop-filter: blur(5px);
-        }
-
-        .btn-action:hover {
-            transform: translateY(-3px);
-            background-color: rgba(255,255,255,0.9);
-        }
-
         #formTambah { display: none; }
 
-        .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 12px;
+        /* Action Buttons Circle */
+        .btn-action-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            color: #64748b;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            padding: 0;
+            text-decoration: none;
+        }
+        .btn-action-circle:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+        .btn-action-circle.blue { color: #3b82f6; border-color: #dbeafe; background: #eff6ff; }
+        .btn-action-circle.green { color: #10b981; border-color: #d1fae5; background: #ecfdf5; }
+        .btn-action-circle.cyan { color: #06b6d4; border-color: #cffafe; background: #ecfeff; }
+        .btn-action-circle.gray { color: #64748b; border-color: #e2e8f0; background: #f8fafc; }
+        .btn-action-circle.red { color: #ef4444; border-color: #fee2e2; background: #fee2e2; }
+
+        /* Badge custom classes */
+        .badge-kelas {
+            background-color: #eff6ff !important;
+            color: #3b82f6 !important;
+            font-weight: 700 !important;
+            font-size: 0.75rem !important;
+            padding: 0.35rem 0.75rem !important;
+            border-radius: 8px !important;
+            border: none !important;
         }
 
         .photo-circle { 
-            width: 48px; height: 48px; 
-            border-radius: 12px; 
-            background: #fff; 
+            width: 40px; height: 40px; 
+            border-radius: 50%; 
+            background: #f1f5f9; 
             overflow: hidden; 
             border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .photo-circle img { width: 100%; height: 100%; object-fit: cover; }
 
-        .table thead th { 
-            background: rgba(13, 110, 253, 0.05); 
-            color: #0d6efd;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            border: none;
-            padding: 15px;
-        }
-
         #live-clock {
-            background: rgba(255, 255, 255, 0.5);
-            padding: 5px 15px;
-            border-radius: 10px;
-            font-weight: 800;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 700;
         }
 
         /* Dropdown Styling */
@@ -174,17 +185,54 @@ include 'header.php';
 </head>
 <body>
 
-<div class="container py-5" style="margin-top: 50px;">
+<div class="container py-4">
+    <!-- Header Row -->
     <div class="glass-card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col-md-7">
-                <h3 class="fw-bold mb-1 text-primary">Manajemen Data Guru</h3>
+                <h3 class="fw-extrabold text-dark mb-1" style="font-weight: 800; letter-spacing: -0.5px;">Manajemen Data Guru</h3>
                 <p class="text-muted mb-0 small"><?= $tgl_indo ?> | <span id="live-clock">--:--:--</span></p>
             </div>
             <div class="col-md-5 text-md-end mt-3 mt-md-0">
-                <button onclick="toggleForm()" class="btn btn-primary btn-action px-4 py-2">
-                    <i class="bi bi-person-plus-fill me-2"></i> Tambah Guru
+                <button onclick="toggleForm()" class="btn btn-primary px-4 py-2.5 rounded-pill fw-bold">
+                    <i class="bi bi-plus me-1"></i> + Tambah Guru
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid Row -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Guru -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="glass-card p-4 mb-0" style="min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Total Guru</div>
+                <div class="h2 fw-extrabold text-dark my-1" style="font-weight: 800; font-size: 1.8rem;"><?= $total_guru ?></div>
+                <div class="text-muted small" style="font-size: 0.75rem;">Guru aktif terdaftar</div>
+            </div>
+        </div>
+        <!-- 2. Wali Lembaga -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="glass-card p-4 mb-0" style="min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Wali Lembaga</div>
+                <div class="h2 fw-extrabold text-dark my-1" style="font-weight: 800; font-size: 1.8rem;"><?= $total_wali ?></div>
+                <div class="text-muted small" style="font-size: 0.75rem;">Memiliki tanggung jawab lembaga</div>
+            </div>
+        </div>
+        <!-- 3. Biometrik Aktif -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="glass-card p-4 mb-0" style="min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Biometrik Aktif</div>
+                <div class="h2 fw-extrabold text-dark my-1" style="font-weight: 800; font-size: 1.8rem;"><?= $total_bio ?></div>
+                <div class="text-muted small" style="font-size: 0.75rem;"><?= $total_bio > 0 ? "$total_bio data biometrik aktif" : "Belum ada data biometrik" ?></div>
+            </div>
+        </div>
+        <!-- 4. RFID Terhubung -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="glass-card p-4 mb-0" style="min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">RFID Terhubung</div>
+                <div class="h2 fw-extrabold text-dark my-1" style="font-weight: 800; font-size: 1.8rem;"><?= $total_rfid ?></div>
+                <div class="text-muted small" style="font-size: 0.75rem;">Kartu guru telah terdaftar</div>
             </div>
         </div>
     </div>
@@ -227,7 +275,7 @@ include 'header.php';
                     <div class="row g-3 mb-3">
                         <div class="col-md-4">
                             <label class="small fw-bold">Jabatan</label>
-                            <input type="text" name="jabatan" class="form-control" placeholder="cth: Guru Mapel, Wali Kelas, Kepala Sekolah" required>
+                            <input type="text" name="jabatan" class="form-control" placeholder="cth: Ustadz/Ustadzah, Wali Lembaga, Pimpinan" required>
                         </div>
                         <div class="col-md-4">
                             <label class="small fw-bold">No. WhatsApp</label>
@@ -252,15 +300,20 @@ include 'header.php';
 
     <!-- Pencarian & Tabel -->
     <div class="glass-card p-4">
-        <form method="GET" class="row g-3 mb-4 align-items-center">
-            <div class="col-md-9">
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" name="q" value="<?= xss($keyword) ?>" class="form-control border-start-0 ps-0" placeholder="Cari Guru berdasarkan Nama, NIP atau Jabatan...">
-                </div>
+        <!-- Header Row -->
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <h5 class="fw-bold m-0 text-dark" style="font-size: 1.1rem;">Daftar Guru</h5>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 text-xs fw-bold" style="font-size: 0.75rem;"><?= $total_data ?></span>
+        </div>
+
+        <!-- Filter form -->
+        <form method="GET" class="row g-2 mb-4 align-items-center">
+            <div class="col flex-grow-1 position-relative">
+                <i class="bi bi-search position-absolute start-0 top-50 translate-middle-y text-muted ms-3" style="font-size: 0.9rem;"></i>
+                <input type="text" name="q" class="form-control border-0 bg-light rounded-pill ps-5 pe-3" style="font-size: 0.85rem; height: 46px;" placeholder="Cari guru berdasarkan nama, NIP atau jabatan..." value="<?= xss($keyword) ?>">
             </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary w-100 btn-action py-2">Terapkan Filter</button>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold" style="height: 46px; font-size: 0.875rem;">Terapkan Filter</button>
             </div>
         </form>
 
@@ -268,14 +321,14 @@ include 'header.php';
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th width="80">Foto</th>
+                        <th class="ps-3" width="8%">FOTO</th>
                         <th>NIP</th>
                         <th>RFID UID</th>
-                        <th>Nama Lengkap</th>
-                        <th>Jabatan</th>
-                        <th>No. WhatsApp</th>
-                        <th>Biometrik</th>
-                        <th width="150" class="text-center">Aksi</th>
+                        <th>NAMA LENGKAP</th>
+                        <th>JABATAN</th>
+                        <th>NO. WHATSAPP</th>
+                        <th>BIOMETRIK</th>
+                        <th class="text-center" width="18%">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -287,43 +340,50 @@ include 'header.php';
                             $sudah_ada_wajah = !empty($row['face_embedding']);
                             ?>
                             <tr>
-                                <td>
-                                    <div class="photo-circle shadow-sm">
+                                <td class="ps-3">
+                                    <div class="photo-circle">
                                         <img src="<?= $foto_tampil ?>" alt="foto">
                                     </div>
                                 </td>
-                                <td><span class="badge bg-light text-dark border p-2 font-monospace"><?= xss($row['nip']) ?></span></td>
-                                <td><span class="badge bg-light text-dark border p-2 font-monospace"><?= xss($row['rfid_uid'] ?? '-') ?></span></td>
-                                <td><strong class="text-dark"><?= xss($row['nama']) ?></strong></td>
-                                <td><span class="badge bg-primary bg-opacity-10 text-primary p-2 px-3"><?= xss($row['jabatan'] ?? '-') ?></span></td>
-                                <td><?= xss($row['no_hp'] ?? '-') ?></td>
+                                <td><span class="badge bg-light text-secondary border border-light-subtle rounded-pill px-3 py-1.5 font-monospace" style="font-size: 0.8rem;"><?= xss($row['nip']) ?></span></td>
+                                <td><span class="badge bg-light text-secondary border border-light-subtle rounded-pill px-3 py-1.5 font-monospace" style="font-size: 0.8rem;"><?= xss($row['rfid_uid'] ?? '-') ?></span></td>
+                                <td>
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;"><?= xss($row['nama']) ?></div>
+                                    <div class="small text-muted" style="font-size: 0.75rem; font-weight: 500;">Guru aktif</div>
+                                </td>
+                                <td><span class="badge badge-kelas"><?= xss($row['jabatan'] ?? '-') ?></span></td>
+                                <td><span class="text-secondary fw-semibold" style="font-size: 0.85rem;"><?= xss($row['no_hp'] ?? '-') ?></span></td>
                                 <td>
                                     <?php if($sudah_ada_wajah): ?>
-                                        <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-shield-fill-check me-1"></i>Terdaftar</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.75rem;">● Aktif</span>
                                     <?php else: ?>
-                                        <span class="badge bg-danger bg-opacity-10 text-danger"><i class="bi bi-shield-fill-x me-1"></i>Belum Ada</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1.5 fw-bold" style="font-size: 0.75rem;">● Belum Ada</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <a href="daftar_wajah_guru.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-light border text-info rounded-3" title="Rekam Wajah">
-                                            <i class="bi bi-person-bounding-box"></i>
+                                <td class="text-center">
+                                    <div class="d-flex align-items-center justify-content-center gap-1.5">
+                                        <!-- 1. Rekam Wajah (Camera) -->
+                                        <a href="daftar_wajah_guru.php?id=<?= $row['id'] ?>" class="btn-action-circle blue" title="Rekam Wajah">
+                                            <i class="bi bi-camera"></i>
                                         </a>
 
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-sm btn-light border text-dark rounded-3" data-bs-toggle="dropdown" title="Cetak Kartu">
+                                        <!-- 2. Cetak Kartu -->
+                                        <div class="dropdown d-inline-block">
+                                            <button type="button" class="btn-action-circle gray" data-bs-toggle="dropdown" title="Cetak Kartu">
                                                 <i class="bi bi-printer"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow">
-                                                <li><a class="dropdown-item" href="cetak_kartu.php?id=<?= $row['id'] ?>&tipe=guru" target="_blank"><i class="bi bi-person-badge text-danger me-2"></i>Kartu Guru</a></li>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                <li><a class="dropdown-item py-2 px-3 rounded" href="cetak_kartu.php?id=<?= $row['id'] ?>&tipe=guru" target="_blank"><i class="bi bi-person-badge text-danger me-2"></i>Kartu Guru</a></li>
                                             </ul>
                                         </div>
 
-                                        <a href="edit_guru.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-light border text-primary rounded-3" title="Edit Data">
-                                            <i class="bi bi-pencil-square"></i>
+                                        <!-- 3. Edit -->
+                                        <a href="edit_guru.php?id=<?= $row['id'] ?>" class="btn-action-circle blue" title="Edit Data">
+                                            <i class="bi bi-pencil"></i>
                                         </a>
 
-                                        <a href="data_guru.php?hapus_id=<?= $row['id'] ?>&token=<?= $_SESSION['csrf_token'] ?>" class="btn btn-sm btn-light border text-danger rounded-3" onclick="return confirm('Hapus permanen data guru ini?')" title="Hapus Data">
+                                        <!-- 4. Hapus -->
+                                        <a href="data_guru.php?hapus_id=<?= $row['id'] ?>&token=<?= $_SESSION['csrf_token'] ?>" class="btn-action-circle red" onclick="return confirm('Hapus permanen data guru ini?')" title="Hapus Data">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </div>

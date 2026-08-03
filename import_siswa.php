@@ -26,12 +26,23 @@ if(isset($_POST['upload'])){
             $rows = $xlsx->rows();
             $sukses = 0; $gagal = 0; $pesan_error = "";
 
+            // Cek jumlah siswa saat ini di database
+            $q_limit = mysqli_query($conn, "SELECT COUNT(*) as total FROM siswa");
+            $total_saat_ini = (int)(mysqli_fetch_assoc($q_limit)['total'] ?? 0);
+
             // Loop mulai baris ke-2 (Index 1)
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
 
                 // Skip jika NIS (Kolom B / Index 1) kosong
                 if(empty($row[1])) continue;
+
+                // Cek jika kuota 150 siswa sudah tercapai
+                if (($total_saat_ini + $sukses) >= 150) {
+                    $gagal++;
+                    $pesan_error .= "Baris ".($i+1).": Gagal. Batas maksimal kuota 150 siswa telah penuh.<br>";
+                    continue;
+                }
 
                 // Mapping Kolom (A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7)
                 $nis    = mysqli_real_escape_string($conn, $row[1]);

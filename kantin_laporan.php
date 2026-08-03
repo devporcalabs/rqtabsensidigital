@@ -136,12 +136,7 @@ include 'header.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f6fc;
-            background-image: radial-gradient(at 0% 0%, rgba(13, 110, 253, 0.05) 0px, transparent 50%);
-            min-height: 100vh;
-        }
+        /* body style handled globally */
 
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
@@ -185,7 +180,7 @@ include 'header.php';
 </head>
 <body>
 
-    <div class="container py-4" style="margin-top: 20px;">
+    <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <div>
                 <h3 class="section-title mb-1"><i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>LAPORAN E-KANTIN</h3>

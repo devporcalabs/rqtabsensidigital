@@ -108,7 +108,7 @@ include 'header.php';
     <div class="print-header">
         <h5 class="mb-0"><?= strtoupper(xss($nama_sekolah)) ?></h5>
         <h5 class="mb-1">REKAPITULASI ABSENSI SISWA</h5>
-        <p>Bulan: <?= xss($nama_bulan_indo[$bulan_pilih]) ?> <?= xss($tahun_pilih) ?> | Kelas: <?= xss($kelas_pilih) ?></p>
+        <p>Bulan: <?= xss($nama_bulan_indo[$bulan_pilih]) ?> <?= xss($tahun_pilih) ?> | Lembaga: <?= xss($kelas_pilih) ?></p>
     </div>
 
     <div class="card shadow-sm border-0 p-4 mb-4 no-print">
@@ -139,10 +139,10 @@ include 'header.php';
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="small fw-bold">Kelas</label>
+                <label class="small fw-bold">Lembaga</label>
                 <?php if($role == 'admin'): ?>
                 <select name="kelas" class="form-select border-0 bg-light" required>
-                    <option value="">-- Pilih Kelas --</option>
+                    <option value="">-- Pilih Lembaga --</option>
                     <?php 
                     $q_kls = mysqli_query($conn, "SELECT nama_kelas FROM kelas ORDER BY nama_kelas ASC");
                     while($k = mysqli_fetch_assoc($q_kls)): ?>

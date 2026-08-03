@@ -18,6 +18,35 @@ if (!isset($data)) {
 
 // Menentukan halaman aktif untuk menandai menu
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Ambil data user & hitung inisial
+$nama_tampil = 'Pengguna';
+$initials = 'AD';
+if (isset($_SESSION['id'])) {
+    $id_user = (int)$_SESSION['id'];
+    $stmt_user = $conn->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt_user->bind_param("i", $id_user);
+    $stmt_user->execute();
+    $d_user = $stmt_user->get_result()->fetch_assoc();
+    
+    if ($d_user) {
+        if (!empty(trim($d_user['nama'] ?? ''))) {
+            $nama_asli = $d_user['nama'];
+        } elseif (!empty(trim($d_user['username'] ?? ''))) {
+            $nama_asli = $d_user['username'];
+        } else {
+            $nama_asli = $_SESSION['nama'] ?? 'Pengguna'; 
+        }
+        $nama_tampil = ucwords(strtolower($nama_asli));
+    }
+}
+$words = explode(" ", $nama_tampil);
+$initials_arr = [];
+foreach ($words as $w) {
+    if (!empty($w)) $initials_arr[] = strtoupper(substr($w, 0, 1));
+}
+$initials = implode("", array_slice($initials_arr, 0, 2));
+if (empty($initials)) $initials = "AD";
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -27,37 +56,301 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Global font & background style */
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8f9fa;
-            padding-top: 80px; 
+            font-family: 'Plus Jakarta Sans', sans-serif !important; 
+            background-color: #f8fafc; 
         }
-        .navbar-custom {
-            background-color: #0d6efd;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: all 0.3s;
+
+        /* Responsive spacing on desktop */
+        @media (min-width: 992px) {
+            .navbar-custom {
+                display: none !important;
+            }
+            body {
+                padding: 2.25rem 0 !important;
+                margin-left: 280px !important;
+                background-color: #f8fafc !important;
+            }
+            .container, .container-fluid, .main-content {
+                max-width: 100% !important;
+                padding-left: 2.5rem !important;
+                padding-right: 2.5rem !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+            }
+            .sidebar-left {
+                display: flex !important;
+            }
         }
-        .nav-link {
+
+        /* Mobile specific style */
+        @media (max-width: 991.98px) {
+            .sidebar-left {
+                display: none !important;
+            }
+            body {
+                padding: 80px 1.5rem 1.5rem 1.5rem !important;
+            }
+            .navbar-custom {
+                display: flex !important;
+                background-color: #0d6efd;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+        }
+
+        /* GLOBAL UI STANDARDIZATION */
+        /* Glass card & standard card standardization */
+        .glass-card, .card {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 24px !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -2px rgba(0, 0, 0, 0.01) !important;
+            padding: 1.75rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+
+        /* Modern Table styling */
+        .table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            width: 100% !important;
+            border: none !important;
+        }
+        .table thead th {
+            background-color: #f8fafc !important;
+            color: #64748b !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            font-size: 0.725rem !important;
+            letter-spacing: 0.5px !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            border-top: none !important;
+            padding: 1rem 1.25rem !important;
+            vertical-align: middle !important;
+        }
+        .table tbody td {
+            padding: 1rem 1.25rem !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            color: #334155 !important;
+            vertical-align: middle !important;
+            background-color: #ffffff !important;
+        }
+        .table-hover tbody tr:hover td {
+            background-color: #f8fafc !important;
+        }
+
+        /* Input and form control styling */
+        .form-control, .form-select {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 12px !important;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.875rem !important;
+            transition: all 0.2s !important;
+            color: #334155 !important;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+            outline: none !important;
+        }
+
+        /* Button styling */
+        .btn {
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            padding: 0.6rem 1.25rem !important;
+            font-size: 0.85rem !important;
+            transition: all 0.2s !important;
+        }
+        .btn-primary {
+            background-color: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background-color: #10b981 !important;
+            border-color: #10b981 !important;
+            color: #ffffff !important;
+        }
+        .btn-success:hover {
+            background-color: #059669 !important;
+            border-color: #059669 !important;
+            transform: translateY(-1px);
+        }
+        .btn-action {
+            border-radius: 30px !important;
+        }
+
+        /* Sidebar Left style */
+        .sidebar-left {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            padding: 2.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+            text-decoration: none;
+        }
+        .sidebar-brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #eff6ff;
+            padding: 4px;
+            object-fit: contain;
+        }
+        .sidebar-brand-name {
+            font-weight: 800;
+            font-size: 1rem;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+        .sidebar-brand-sub {
+            font-size: 0.75rem;
+            color: #64748b;
             font-weight: 500;
-            transition: 0.3s;
         }
-        .nav-link:hover {
-            color: #ffc107 !important;
+        .sidebar-menu-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
         }
-        .nav-link.active {
-            color: #ffc107 !important;
-            border-bottom: 2px solid #ffc107;
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
         }
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            color: #64748b;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        .sidebar-nav-link i {
+            font-size: 1.2rem;
+        }
+        .sidebar-nav-link:hover {
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .sidebar-nav-link.active {
+            background: #3b82f6;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+        }
+        .sidebar-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        
         .logout-modal .modal-content {
-            border-radius: 20px;
+            border-radius: 24px;
             border: none;
         }
     </style>
 </head>
 <body>
 
+<!-- Left Sidebar -->
+<div class="sidebar-left">
+    <a href="dashboard.php" class="sidebar-brand">
+        <img src="img/<?= htmlspecialchars($data['logo_sekolah'] ?? 'porcalabs.ico'); ?>" class="sidebar-brand-logo">
+        <div>
+            <div class="sidebar-brand-name"><?= htmlspecialchars($data['nama_sekolah'] ?? 'Rumah Quran'); ?></div>
+            <div class="sidebar-brand-sub">Sistem Administrasi</div>
+        </div>
+    </a>
+    
+    <div class="sidebar-menu-label">Menu Utama</div>
+    
+    <div class="sidebar-nav">
+        <a href="dashboard.php" class="sidebar-nav-link <?= ($current_page == 'dashboard.php') ? 'active' : ''; ?>">
+            <i class="bi bi-grid-fill"></i> Dashboard
+        </a>
+        
+        <?php if ($role == 'admin'): ?>
+        <a href="data_siswa.php" class="sidebar-nav-link <?= in_array($current_page, ['data_siswa.php', 'edit_siswa.php']) ? 'active' : ''; ?>">
+            <i class="bi bi-people-fill"></i> Siswa
+        </a>
+        <a href="data_guru.php" class="sidebar-nav-link <?= in_array($current_page, ['data_guru.php', 'edit_guru.php']) ? 'active' : ''; ?>">
+            <i class="bi bi-person-badge-fill"></i> Guru
+        </a>
+        <?php endif; ?>
+        
+        <?php if ($role == 'admin' || $role == 'kantin'): ?>
+        <a class="sidebar-nav-link <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseKantin" role="button" aria-expanded="<?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'true' : 'false'; ?>" aria-controls="collapseKantin">
+            <i class="bi bi-shop"></i> E-Kantin <i class="bi bi-chevron-down ms-auto" style="font-size: 0.8rem;"></i>
+        </a>
+        <div class="collapse <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'show' : ''; ?>" id="collapseKantin" style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem;">
+            <a href="kantin_kasir.php" class="sidebar-nav-link <?= ($current_page == 'kantin_kasir.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-calculator"></i> Kasir Kantin
+            </a>
+            <?php if ($role == 'admin'): ?>
+            <a href="kantin_topup.php" class="sidebar-nav-link <?= ($current_page == 'kantin_topup.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-wallet2"></i> Top Up Saldo
+            </a>
+            <?php endif; ?>
+            <a href="kantin_laporan.php" class="sidebar-nav-link <?= ($current_page == 'kantin_laporan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Laporan Kantin
+            </a>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($role !== 'kantin'): ?>
+        <a href="laporan.php" class="sidebar-nav-link <?= ($current_page == 'laporan.php') ? 'active' : ''; ?>">
+            <i class="bi bi-file-earmark-bar-graph-fill"></i> Laporan
+        </a>
+        <?php endif; ?>
+    </div>
+    
+    <div class="sidebar-footer">
+        <?php if ($role == 'admin'): ?>
+        <a href="pengaturan.php" class="sidebar-nav-link <?= ($current_page == 'pengaturan.php') ? 'active' : ''; ?>">
+            <i class="bi bi-gear-fill"></i> Pengaturan
+        </a>
+        <?php endif; ?>
+        
+        <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal" class="sidebar-nav-link text-danger">
+            <i class="bi bi-box-arrow-right"></i> Keluar
+        </a>
+    </div>
+</div>
+
+<!-- Mobile Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2" href="dashboard.php">

@@ -38,12 +38,7 @@ include 'header.php';
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f6fc;
-            background-image: radial-gradient(at 0% 0%, rgba(13, 110, 253, 0.05) 0px, transparent 50%);
-            min-height: 100vh;
-        }
+        /* body style handled globally */
 
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
@@ -134,7 +129,7 @@ include 'header.php';
 </head>
 <body>
 
-    <div class="container py-4" style="margin-top: 20px;">
+    <div class="container py-4">
         <div class="mb-4">
             <h3 class="section-title mb-1"><i class="bi bi-wallet2 me-2 text-primary"></i>TOP UP SALDO E-KANTIN</h3>
             <p class="text-muted small mb-0">Isi ulang saldo kartu jajan siswa dengan mudah & aman</p>

@@ -35,12 +35,7 @@ include 'header.php';
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f3f6fc;
-            background-image: radial-gradient(at 0% 0%, rgba(13, 110, 253, 0.05) 0px, transparent 50%);
-            min-height: 100vh;
-        }
+        /* body background handled globally */
 
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
@@ -191,7 +186,7 @@ include 'header.php';
     <!-- Input tersembunyi untuk scan RFID secara otomatis -->
     <input type="text" id="rfid_field" autofocus autocomplete="off" inputmode="none">
 
-    <div class="container py-4" style="margin-top: 20px;">
+    <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h3 class="canteen-title mb-1"><i class="bi bi-shop me-2 text-primary"></i>KASIR E-KANTIN</h3>

@@ -65,7 +65,12 @@ if(isset($_POST['test_wa'])){
     $res = sendWa($target, $pesan, $token, $url);
     
     $result = json_decode($res, true);
-    $user_msg = (isset($result['status']) && $result['status'] == true) ? "Pesan WA Terkirim!" : "Pesan WA Gagal! Periksa Konfigurasi.";
+    if (isset($result['status']) && $result['status'] == true) {
+        $user_msg = "Pesan WA Terkirim! Tes koneksi Fonnte Berhasil.";
+    } else {
+        $reason = isset($result['reason']) ? $result['reason'] : (isset($result['detail']) ? $result['detail'] : (isset($result['message']) ? $result['message'] : "Periksa Token & URL API."));
+        $user_msg = "Pesan WA Gagal! " . addslashes($reason);
+    }
     echo "<script>alert('$user_msg'); window.location='pengaturan.php';</script>";
 }
 
@@ -129,6 +134,7 @@ if(isset($_POST['simpan_pengaturan'])){
     $mode_p = isset($_POST['mode_absen_pulang']) ? 1 : 0;
     $s1_m = $_POST['s1_masuk']; $s1_p = $_POST['s1_pulang'];
     $s2_m = $_POST['s2_masuk']; $s2_p = $_POST['s2_pulang'];
+    $s3_m = $_POST['s3_masuk']; $s3_p = $_POST['s3_pulang'];
     $wajib_p = isset($_POST['wajib_pulang']) ? 1 : 0;
     $wa_mode = (int)$_POST['wa_mode'];
     $wa_token = trim($_POST['wa_token']);
@@ -161,7 +167,7 @@ if(isset($_POST['simpan_pengaturan'])){
 
     $sql = "UPDATE pengaturan SET 
               nama_sekolah=?, timezone=?, libur_pekanan=?, mode_absen_pulang=?,
-              s1_masuk=?, s1_pulang=?, s2_masuk=?, s2_pulang=?, wajib_pulang=?,
+              s1_masuk=?, s1_pulang=?, s2_masuk=?, s2_pulang=?, s3_masuk=?, s3_pulang=?, wajib_pulang=?,
               wa_mode=?, wa_token=?, wa_api_url=?, tg_bot_token=?, 
               smtp_host=?, smtp_port=?, smtp_user=?, smtp_pass=?,
               pesan_masuk=?, pesan_pulang=?, logo_sekolah=? 
@@ -169,9 +175,8 @@ if(isset($_POST['simpan_pengaturan'])){
     
     $stmt_upd = $conn->prepare($sql);
     
-    // PERBAIKAN FINAL: Susunan huruf sudah disesuaikan sempurna dengan 20 variabel di bawahnya
-    $stmt_upd->bind_param("sssissssiissssisssss", 
-        $nama, $timezone, $libur_p, $mode_p, $s1_m, $s1_p, $s2_m, $s2_p, $wajib_p,
+    $stmt_upd->bind_param("sssissssssiissssisssss", 
+        $nama, $timezone, $libur_p, $mode_p, $s1_m, $s1_p, $s2_m, $s2_p, $s3_m, $s3_p, $wajib_p,
         $wa_mode, $wa_token, $wa_url, $tg_token, $smtp_host, $smtp_port, $smtp_user, $smtp_pass,
         $p_masuk, $p_pulang, $logo_final
     );
@@ -279,21 +284,29 @@ include 'header.php';
                     <div class="mt-4 p-3 bg-light rounded-4 border">
                         <span class="fw-bold d-block mb-3 text-dark"><i class="bi bi-clock-history me-2"></i>Pengaturan Sesi & Shift</span>
                         <div class="row g-3">
-                            <div class="col-md-3">
+                            <div class="col-md-2 col-sm-4 col-6">
                                 <label class="small fw-bold text-primary">Sesi 1: Masuk</label>
                                 <input type="time" name="s1_masuk" class="form-control form-control-sm" value="<?= xss($data['s1_masuk']) ?>">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2 col-sm-4 col-6">
                                 <label class="small fw-bold text-primary">Sesi 1: Balik</label>
                                 <input type="time" name="s1_pulang" class="form-control form-control-sm" value="<?= xss($data['s1_pulang']) ?>">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2 col-sm-4 col-6">
                                 <label class="small fw-bold text-info">Sesi 2: Masuk</label>
                                 <input type="time" name="s2_masuk" class="form-control form-control-sm" value="<?= xss($data['s2_masuk']) ?>">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2 col-sm-4 col-6">
                                 <label class="small fw-bold text-info">Sesi 2: Balik</label>
                                 <input type="time" name="s2_pulang" class="form-control form-control-sm" value="<?= xss($data['s2_pulang']) ?>">
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <label class="small fw-bold text-success">Sesi 3: Masuk</label>
+                                <input type="time" name="s3_masuk" class="form-control form-control-sm" value="<?= xss($data['s3_masuk'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <label class="small fw-bold text-success">Sesi 3: Balik</label>
+                                <input type="time" name="s3_pulang" class="form-control form-control-sm" value="<?= xss($data['s3_pulang'] ?? '') ?>">
                             </div>
                         </div>
                         <div class="mt-3 d-flex justify-content-between align-items-center">

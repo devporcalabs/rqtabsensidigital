@@ -28,12 +28,12 @@ if(isset($_POST['tambah'])){
     $stmt_cek->bind_param("s", $nama_kelas);
     $stmt_cek->execute();
     if($stmt_cek->get_result()->num_rows > 0){
-        echo "<script>alert('Gagal! Nama kelas sudah ada.');</script>";
+        echo "<script>alert('Gagal! Nama lembaga sudah ada.');</script>";
     } else {
         $stmt_ins = $conn->prepare("INSERT INTO kelas (nama_kelas) VALUES (?)");
         $stmt_ins->bind_param("s", $nama_kelas);
         $stmt_ins->execute();
-        echo "<script>alert('Berhasil menambah kelas!'); window.location='data_kelas.php';</script>";
+        echo "<script>alert('Berhasil menambah lembaga!'); window.location='data_kelas.php';</script>";
     }
 }
 
@@ -98,7 +98,7 @@ if(isset($_POST['proses_hapus'])){
         $stmt_del_k->bind_param("i", $id_hapus);
         $stmt_del_k->execute();
 
-        echo "<script>alert('Sukses! Kelas dan data siswa telah dihapus.'); window.location='data_kelas.php';</script>";
+        echo "<script>alert('Sukses! Lembaga dan data siswa telah dihapus.'); window.location='data_kelas.php';</script>";
     }
 }
 
@@ -111,7 +111,7 @@ include 'header.php';
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Data Kelas - Vibrant Glass</title>
+    <title>Data Lembaga - Vibrant Glass</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -188,15 +188,15 @@ include 'header.php';
     <div class="row g-4">
         <div class="col-md-5">
             <div class="glass-card p-4 border-top border-4 border-primary">
-                <h5 class="fw-bold mb-4 text-primary"><i class="bi bi-plus-circle-dotted me-2"></i>Tambah Kelas Baru</h5>
+                <h5 class="fw-bold mb-4 text-primary"><i class="bi bi-plus-circle-dotted me-2"></i>Tambah Lembaga Baru</h5>
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">NAMA KELAS</label>
-                        <input type="text" name="nama_kelas" class="form-control" placeholder="Misal: 10 TKJ A" required autofocus>
+                        <label class="form-label small fw-bold text-muted">NAMA LEMBAGA</label>
+                        <input type="text" name="nama_kelas" class="form-control" placeholder="Misal: RTQ Al-Hikmah" required autofocus>
                     </div>
                     <button type="submit" name="tambah" class="btn btn-primary btn-vibrant w-100">
-                        <i class="bi bi-cloud-plus me-2"></i>SIMPAN KELAS
+                        <i class="bi bi-cloud-plus me-2"></i>SIMPAN LEMBAGA
                     </button>
                 </form>
             </div>
@@ -205,14 +205,14 @@ include 'header.php';
         <div class="col-md-7">
             <div class="glass-card p-0 overflow-hidden">
                 <div class="p-4 border-bottom bg-white bg-opacity-30">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-building me-2"></i>Daftar Kelas Aktif</h5>
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-building me-2"></i>Daftar Lembaga Aktif</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th width="15%" class="text-center">No</th>
-                                <th>Nama Kelas</th>
+                                <th>Nama Lembaga</th>
                                 <th width="30%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -253,13 +253,13 @@ include 'header.php';
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold text-primary">Edit Nama Kelas</h5>
+                    <h5 class="modal-title fw-bold text-primary">Edit Nama Lembaga</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="id_kelas" id="edit-id">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">NAMA KELAS BARU</label>
+                        <label class="form-label small fw-bold text-muted">NAMA LEMBAGA BARU</label>
                         <input type="text" name="nama_kelas" id="edit-nama" class="form-control" required>
                     </div>
                 </div>
@@ -278,17 +278,17 @@ include 'header.php';
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Hapus Kelas</h5>
+                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Hapus Lembaga</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center py-4">
                     <input type="hidden" name="id_kelas_hapus" id="hapus-id">
-                    <p class="mb-1 text-muted">Apakah Anda yakin ingin menghapus kelas</p>
+                    <p class="mb-1 text-muted">Apakah Anda yakin ingin menghapus lembaga</p>
                     <h3 id="hapus-nama-display" class="fw-bold text-danger mb-4"></h3>
                     <div class="bg-danger bg-opacity-10 p-3 rounded-4">
                         <p class="small text-danger fw-bold mb-0">
                             <i class="bi bi-info-circle-fill me-1"></i>
-                            PERINGATAN: Seluruh data siswa dan file foto di dalam kelas ini akan terhapus secara permanen!
+                            PERINGATAN: Seluruh data siswa dan file foto di dalam lembaga ini akan terhapus secara permanen!
                         </p>
                     </div>
                 </div>

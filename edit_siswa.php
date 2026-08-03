@@ -60,10 +60,10 @@ if(isset($_POST['update'])){
         $allowed = ['jpg', 'jpeg', 'png'];
         if(in_array($ext, $allowed)){
             $foto_baru = $nis . "_" . time() . "." . $ext;
-            if(move_uploaded_file($_FILES['foto']['tmp_name'], "img/siswa/" . $foto_baru)){
-                // Hapus foto lama jika bukan default
-                if(!empty($d['foto']) && file_exists("img/siswa/" . $d['foto'])){
-                    unlink("img/siswa/" . $d['foto']);
+            $dir_siswa = __DIR__ . "/img/siswa/";
+            if(move_uploaded_file($_FILES['foto']['tmp_name'], $dir_siswa . $foto_baru)){
+                if(!empty($d['foto']) && file_exists($dir_siswa . $d['foto'])){
+                    unlink($dir_siswa . $d['foto']);
                 }
                 $foto_final = $foto_baru;
             }
@@ -155,7 +155,7 @@ include 'header.php';
                                     <input type="text" name="nama" class="form-control" value="<?= xss($d['nama']) ?>" required>
                                 </div>
                                 <div class="col-md-7">
-                                    <label class="form-label">Penempatan Kelas</label>
+                                    <label class="form-label">Penempatan Lembaga</label>
                                     <select name="kelas" class="form-select">
                                         <?php 
                                         $qk = mysqli_query($conn, "SELECT nama_kelas FROM kelas ORDER BY nama_kelas ASC");
@@ -169,8 +169,9 @@ include 'header.php';
                                 <div class="col-md-5">
                                     <label class="form-label">Sesi Absensi</label>
                                     <select name="sesi" class="form-select">
-                                        <option value="1" <?= ($d['sesi'] == '1') ? 'selected' : '' ?>>Sesi 1 (Pagi)</option>
-                                        <option value="2" <?= ($d['sesi'] == '2') ? 'selected' : '' ?>>Sesi 2 (Siang)</option>
+                                        <option value="1" <?= ($d['sesi'] == '1') ? 'selected' : '' ?>>Sesi 1</option>
+                                        <option value="2" <?= ($d['sesi'] == '2') ? 'selected' : '' ?>>Sesi 2</option>
+                                        <option value="3" <?= ($d['sesi'] == '3') ? 'selected' : '' ?>>Sesi 3</option>
                                     </select>
                                 </div>
                             </div>
