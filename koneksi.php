@@ -1,7 +1,14 @@
 <?php
 ob_start();
 
-if (isset($_SERVER['HTTP_HOST']) && ($_SERVER['HTTP_HOST'] == 'demo-absensi.porcalabs.com' || $_SERVER['HTTP_HOST'] == '146.235.16.115')) {
+$host_header = $_SERVER['HTTP_HOST'] ?? '';
+
+if (strpos($host_header, 'rqt.porcalabs.my.id') !== false) {
+    $host = "localhost";
+    $user = "sql_rqt";
+    $pass = "sql_rqt"; // Sesuaikan jika password beda
+    $db   = "sql_rqt";
+} elseif ($host_header == 'demo-absensi.porcalabs.com' || $host_header == '146.235.16.115') {
     $host = "localhost";
     $user = "demo_absensi";
     $pass = "dJm2xL58KieB3N5H";
