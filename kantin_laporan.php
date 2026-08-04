@@ -188,12 +188,9 @@ include 'header.php';
             </div>
             
             <div class="d-flex gap-2">
-                <a href="?export=excel&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&tipe=<?= $tipe_filter ?>&kelas=<?= $kelas_filter ?>" class="btn btn-success filter-btn text-white" style="background-color:#16a34a; border-color:#16a34a;">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                <a href="?export=excel&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&tipe=<?= $tipe_filter ?>&kelas=<?= $kelas_filter ?>" class="btn btn-success filter-btn text-white fw-bold px-4" style="background-color:#16a34a; border-color:#16a34a;">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                 </a>
-                <button class="btn btn-outline-secondary filter-btn" onclick="window.print()">
-                    <i class="bi bi-printer me-1"></i> Cetak Laporan
-                </button>
             </div>
         </div>
 

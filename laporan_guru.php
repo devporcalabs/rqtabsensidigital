@@ -254,9 +254,9 @@ include 'header.php';
                 <?= ($mode == 'harian') ? 'Laporan Harian Tanggal ' . date('d/m/Y', strtotime($tgl_harian)) : 'Rekapitulasi Kehadiran (' . $hari_efektif . ' Hari Kerja)' ?>
             </h5>
             
-            <?php if($mode == 'rekap'): ?>
-                <button onclick="window.print()" class="btn btn-outline-primary btn-sm rounded-pill px-3"><i class="bi bi-printer me-1"></i> Cetak PDF</button>
-            <?php endif; ?>
+            <button onclick="exportToExcel('.table', 'Laporan_Absensi_Guru_<?= $mode ?>_<?= date('Ymd') ?>')" class="btn btn-success btn-sm rounded-pill px-3 fw-bold">
+                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+            </button>
         </div>
 
         <div class="table-responsive">
@@ -357,6 +357,20 @@ include 'header.php';
         document.getElementById("inputHarian").style.display = (mode === "harian") ? "block" : "none";
         document.getElementById("inputAwal").style.display = (mode === "rekap") ? "block" : "none";
         document.getElementById("inputAkhir").style.display = (mode === "rekap") ? "block" : "none";
+    }
+
+    function exportToExcel(tableSelector, filename) {
+        let table = document.querySelector(tableSelector);
+        if (!table) { alert('Data tabel tidak ditemukan!'); return; }
+        let html = table.outerHTML;
+        let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = (filename || 'laporan_guru') + '.xls';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 </script>
 </body>

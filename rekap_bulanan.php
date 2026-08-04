@@ -174,8 +174,8 @@ include 'header.php';
             </h4>
             <div>
                 <a href="dashboard.php" class="btn btn-outline-secondary rounded-pill px-4 me-2">Kembali</a>
-                <button onclick="window.print()" class="btn btn-danger rounded-pill px-4 shadow-sm fw-bold">
-                    <i class="bi bi-printer me-2"></i>Cetak PDF
+                <button onclick="exportToExcel('.table', 'Rekap_Bulanan_<?= xss($tipe_target) ?>_<?= $bulan_pilih ?>_<?= $tahun_pilih ?>')" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
                 </button>
             </div>
         </div>
@@ -303,5 +303,21 @@ include 'header.php';
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+function exportToExcel(tableSelector, filename) {
+    let table = document.querySelector(tableSelector);
+    if (!table) { alert('Data tabel tidak ditemukan!'); return; }
+    let html = table.outerHTML;
+    let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = (filename || 'rekap_absensi') + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
 </body>
 </html>
