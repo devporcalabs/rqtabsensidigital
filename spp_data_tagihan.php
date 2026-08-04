@@ -93,6 +93,70 @@ include 'header.php';
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .card-custom { background: #fff; border-radius: 20px; border: 1px solid #e2e8f0; padding: 1.5rem; }
+
+        .btn-action-spp {
+            font-size: 0.78rem !important;
+            font-weight: 700 !important;
+            padding: 6px 12px !important;
+            border-radius: 12px !important;
+            white-space: nowrap !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            line-height: 1.2 !important;
+            text-decoration: none !important;
+            transition: all 0.15s ease-in-out !important;
+            border: 1px solid transparent;
+        }
+        .btn-action-spp:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .btn-action-spp.btn-wa {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #10b981 !important;
+        }
+        .btn-action-spp.btn-copy {
+            background-color: #ffffff !important;
+            color: #475569 !important;
+            border-color: #cbd5e1 !important;
+            padding: 6px 10px !important;
+        }
+        .btn-action-spp.btn-bayar {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            border-color: #3b82f6 !important;
+        }
+        .btn-action-spp.btn-kwitansi {
+            background-color: #ffffff !important;
+            color: #2563eb !important;
+            border-color: #3b82f6 !important;
+        }
+
+        /* Tabel Tagihan Content Font Size */
+        .table-tagihan {
+            font-size: 0.85rem !important;
+        }
+        .table-tagihan th {
+            font-size: 0.78rem !important;
+            font-weight: 700 !important;
+            text-uppercase: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569 !important;
+            background-color: #f8fafc !important;
+            padding: 12px 14px !important;
+        }
+        .table-tagihan td {
+            padding: 10px 14px !important;
+            vertical-align: middle !important;
+        }
+        .table-tagihan small {
+            font-size: 0.78rem !important;
+        }
+        .table-tagihan .badge {
+            font-size: 0.75rem !important;
+        }
     </style>
 </head>
 <body>
@@ -147,7 +211,7 @@ include 'header.php';
     <!-- Data Table -->
     <div class="card-custom shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 table-tagihan">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -198,23 +262,23 @@ include 'header.php';
                                 </span>
                             </td>
                             <td class="text-end">
-                                <div class="btn-group">
-                                    <a href="<?= $wa_url ?>" target="_blank" class="btn btn-sm btn-success fw-bold" title="Kirim Tagihan ke WhatsApp Orang Tua">
-                                        <i class="bi bi-whatsapp me-1"></i> Kirim ke WA
+                                <div class="d-inline-flex align-items-center justify-content-end gap-1" style="white-space: nowrap;">
+                                    <a href="<?= $wa_url ?>" target="_blank" class="btn-action-spp btn-wa" title="Kirim Tagihan ke WhatsApp Orang Tua">
+                                        <i class="bi bi-whatsapp me-1" style="font-size: 0.85rem;"></i> Kirim ke WA
                                     </a>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="copyLink('<?= $link_portal ?>')" title="Salin Link Portal Ortu">
-                                        <i class="bi bi-copy"></i>
+                                    <button type="button" class="btn-action-spp btn-copy" onclick="copyLink('<?= $link_portal ?>')" title="Salin Link Portal Ortu">
+                                        <i class="bi bi-copy" style="font-size: 0.85rem;"></i>
                                     </button>
                                     
                                     <?php if ($row['sisa'] > 0 && ($role == 'admin' || $role == 'bendahara' || $role == 'operator')): ?>
-                                    <button class="btn btn-sm btn-primary" onclick='bukaModalBayar(<?= json_encode($row) ?>)' title="Bayar Tunai">
-                                        <i class="bi bi-cash-stack"></i> Bayar
+                                    <button class="btn-action-spp btn-bayar" onclick='bukaModalBayar(<?= json_encode($row) ?>)' title="Bayar Tunai">
+                                        <i class="bi bi-wallet2 me-1" style="font-size: 0.85rem;"></i> Bayar
                                     </button>
                                     <?php endif; ?>
 
                                     <?php if ($row['dibayar'] > 0): ?>
-                                    <a href="spp_kwitansi.php?tagihan_id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-primary" target="_blank" title="Cetak Kwitansi">
-                                        <i class="bi bi-printer"></i> Kwitansi
+                                    <a href="spp_kwitansi.php?tagihan_id=<?= $row['id'] ?>" class="btn-action-spp btn-kwitansi" target="_blank" title="Cetak Kwitansi">
+                                        <i class="bi bi-file-earmark-text me-1" style="font-size: 0.85rem;"></i> Kwitansi
                                     </a>
                                     <?php endif; ?>
                                 </div>
@@ -274,8 +338,37 @@ include 'header.php';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function copyLink(url) {
-    navigator.clipboard.writeText(url);
-    alert('Link Portal Orang Tua berhasil disalin:\n' + url);
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Link Portal Orang Tua berhasil disalin:\n' + url);
+        }).catch(function() {
+            fallbackCopyText(url);
+        });
+    } else {
+        fallbackCopyText(url);
+    }
+}
+
+function fallbackCopyText(url) {
+    var tempInput = document.createElement("textarea");
+    tempInput.value = url;
+    tempInput.style.position = "fixed";
+    tempInput.style.left = "-9999px";
+    tempInput.style.top = "-9999px";
+    document.body.appendChild(tempInput);
+    tempInput.focus();
+    tempInput.select();
+    try {
+        var successful = document.execCommand('copy');
+        if (successful) {
+            alert('Link Portal Orang Tua berhasil disalin:\n' + url);
+        } else {
+            prompt('Salin link portal secara manual:', url);
+        }
+    } catch (err) {
+        prompt('Salin link portal secara manual:', url);
+    }
+    document.body.removeChild(tempInput);
 }
 
 function bukaModalBayar(row) {
