@@ -326,6 +326,39 @@ if (empty($initials)) $initials = "AD";
             <i class="bi bi-person-badge-fill"></i> Guru
         </a>
         <?php endif; ?>
+
+        <?php if ($role == 'admin' || $role == 'bendahara' || $role == 'operator' || $role == 'walikelas' || $role == 'kepalsekolah'): ?>
+        <a class="sidebar-nav-link <?= in_array($current_page, ['spp_dashboard.php', 'spp_data_tagihan.php', 'spp_pembayaran.php', 'spp_jenis_tagihan.php', 'spp_generate_tagihan.php', 'spp_laporan.php', 'spp_pengaturan.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseSPP" role="button" aria-expanded="<?= in_array($current_page, ['spp_dashboard.php', 'spp_data_tagihan.php', 'spp_pembayaran.php', 'spp_jenis_tagihan.php', 'spp_generate_tagihan.php', 'spp_laporan.php', 'spp_pengaturan.php']) ? 'true' : 'false'; ?>" aria-controls="collapseSPP">
+            <i class="bi bi-wallet2"></i> Keuangan SPP <i class="bi bi-chevron-down ms-auto" style="font-size: 0.8rem;"></i>
+        </a>
+        <div class="collapse sidebar-sub-nav <?= in_array($current_page, ['spp_dashboard.php', 'spp_data_tagihan.php', 'spp_pembayaran.php', 'spp_jenis_tagihan.php', 'spp_generate_tagihan.php', 'spp_laporan.php', 'spp_pengaturan.php']) ? 'show' : ''; ?>" id="collapseSPP">
+            <a href="spp_dashboard.php" class="sidebar-nav-link <?= ($current_page == 'spp_dashboard.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-speedometer2"></i> Dashboard SPP
+            </a>
+            <a href="spp_data_tagihan.php" class="sidebar-nav-link <?= ($current_page == 'spp_data_tagihan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-receipt-cutoff"></i> Tagihan Siswa
+            </a>
+            <a href="spp_pembayaran.php" class="sidebar-nav-link <?= ($current_page == 'spp_pembayaran.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-check-circle"></i> Verifikasi Bayar
+            </a>
+            <?php if ($role == 'admin' || $role == 'bendahara'): ?>
+            <a href="spp_jenis_tagihan.php" class="sidebar-nav-link <?= ($current_page == 'spp_jenis_tagihan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-tags"></i> Master Tagihan
+            </a>
+            <a href="spp_generate_tagihan.php" class="sidebar-nav-link <?= ($current_page == 'spp_generate_tagihan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-magic"></i> Generate Tagihan
+            </a>
+            <?php endif; ?>
+            <a href="spp_laporan.php" class="sidebar-nav-link <?= ($current_page == 'spp_laporan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-file-earmark-bar-graph"></i> Laporan SPP
+            </a>
+            <?php if ($role == 'admin' || $role == 'bendahara'): ?>
+            <a href="spp_pengaturan.php" class="sidebar-nav-link <?= ($current_page == 'spp_pengaturan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-gear"></i> Pengaturan SPP
+            </a>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
         
         <?php if ($role == 'admin' || $role == 'kantin'): ?>
         <a class="sidebar-nav-link <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseKantin" role="button" aria-expanded="<?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'true' : 'false'; ?>" aria-controls="collapseKantin">
@@ -409,6 +442,56 @@ if (empty($initials)) $initials = "AD";
                     <a class="nav-link <?= ($current_page == 'data_guru.php') ? 'active' : ''; ?>" href="data_guru.php">
                         <i class="bi bi-person-badge me-1"></i> Guru
                     </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if ($role == 'admin' || $role == 'bendahara' || $role == 'operator' || $role == 'walikelas' || $role == 'kepalsekolah'): ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= in_array($current_page, ['spp_dashboard.php', 'spp_data_tagihan.php', 'spp_pembayaran.php', 'spp_jenis_tagihan.php', 'spp_generate_tagihan.php', 'spp_laporan.php', 'spp_pengaturan.php']) ? 'active' : ''; ?>" href="#" id="navbarDropdownSPP" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-wallet2 me-1"></i> Keuangan SPP
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="navbarDropdownSPP" style="border-radius: 12px; padding: 10px;">
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_dashboard.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_dashboard.php">
+                                <i class="bi bi-speedometer2 me-2"></i> Dashboard SPP
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_data_tagihan.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_data_tagihan.php">
+                                <i class="bi bi-receipt-cutoff me-2"></i> Tagihan Siswa
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_pembayaran.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_pembayaran.php">
+                                <i class="bi bi-check-circle me-2"></i> Verifikasi Bayar
+                            </a>
+                        </li>
+                        <?php if ($role == 'admin' || $role == 'bendahara'): ?>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_jenis_tagihan.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_jenis_tagihan.php">
+                                <i class="bi bi-tags me-2"></i> Master Tagihan
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_generate_tagihan.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_generate_tagihan.php">
+                                <i class="bi bi-magic me-2"></i> Generate Tagihan
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_laporan.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_laporan.php">
+                                <i class="bi bi-file-earmark-bar-graph me-2"></i> Laporan SPP
+                            </a>
+                        </li>
+                        <?php if ($role == 'admin' || $role == 'bendahara'): ?>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'spp_pengaturan.php') ? 'active bg-primary text-white' : ''; ?>" href="spp_pengaturan.php">
+                                <i class="bi bi-gear me-2"></i> Pengaturan SPP
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                    </ul>
                 </li>
                 <?php endif; ?>
 
