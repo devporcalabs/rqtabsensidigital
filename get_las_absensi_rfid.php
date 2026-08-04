@@ -1,52 +1,56 @@
 <?php
 include 'koneksi.php';
+date_default_timezone_set('Asia/Jakarta');
 
-// Ambil 10 absensi terbaru hari ini
 $tgl = date('Y-m-d');
-$sql = "SELECT a.waktu_masuk, a.waktu_pulang, s.nama, s.kelas, s.foto 
-        FROM absensi a 
-        JOIN siswa s ON a.nis = s.nis 
-        WHERE DATE(a.waktu_masuk) = '$tgl' 
-        ORDER BY GREATEST(IFNULL(a.waktu_masuk, 0), IFNULL(a.waktu_pulang, 0)) DESC LIMIT 5";
+
+// Query 5 absensi terbaru hari ini (gabungan Siswa & Guru)
+$sql = "SELECT nama, kelas, foto, waktu_masuk, waktu_pulang 
+        FROM (
+            SELECT s.nama, s.kelas, CONCAT('siswa/', s.foto) AS foto, a.waktu_masuk, a.waktu_pulang 
+            FROM absensi a 
+            JOIN siswa s ON a.nis = s.nis 
+            WHERE DATE(a.waktu_masuk) = '$tgl' OR DATE(a.waktu_pulang) = '$tgl'
+            UNION ALL
+            SELECT g.nama, 'Guru' AS kelas, CONCAT('guru/', g.foto) AS foto, ag.waktu_masuk, ag.waktu_pulang 
+            FROM absensi_guru ag 
+            JOIN guru g ON ag.nip = g.nip 
+            WHERE DATE(ag.waktu_masuk) = '$tgl' OR DATE(ag.waktu_pulang) = '$tgl'
+        ) combined
+        ORDER BY GREATEST(IFNULL(waktu_masuk, 0), IFNULL(waktu_pulang, 0)) DESC LIMIT 5";
 
 $query = mysqli_query($conn, $sql);
 
-if(mysqli_num_rows($query) > 0){
-    while($row = mysqli_fetch_assoc($query)){
-        // Logika Jam & Label
-        if(!empty($row['waktu_pulang']) && $row['waktu_pulang'] != '0000-00-00 00:00:00'){
-            $jam_tampil = date('H:i', strtotime($row['waktu_pulang']));
-            $label = "PULANG";
-            $color = "#ef4444"; // Merah
+if ($query && mysqli_num_rows($query) > 0) {
+    while ($row = mysqli_fetch_assoc($query)) {
+        // Tentukan apakah aktivitas terakhir adalah Pulang atau Masuk
+        $is_pulang = (!empty($row['waktu_pulang']) && $row['waktu_pulang'] != '0000-00-00 00:00:00');
+        $waktu = $is_pulang ? $row['waktu_pulang'] : $row['waktu_masuk'];
+        $jam = date('H:i', strtotime($waktu));
+        $label_waktu = ($is_pulang ? 'Jam Pulang: ' : 'Jam Masuk: ') . $jam;
+        $color_class = $is_pulang ? 'text-danger' : 'text-success';
+
+        // Foto / Avatar Bulet
+        $path_foto = 'img/' . $row['foto'];
+        if (!empty($row['foto']) && file_exists($path_foto)) {
+            $img_html = '<img src="' . $path_foto . '" class="log-img shadow-sm" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #3b82f6;" alt="foto">';
         } else {
-            $jam_tampil = date('H:i', strtotime($row['waktu_masuk']));
-            $label = "MASUK";
-            $color = "#10b981"; // Hijau
+            $img_html = '<div class="log-icon-css shadow-sm" style="width: 50px; height: 50px; border-radius: 50%; background: #eff6ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; border: 2px solid #3b82f6;"><i class="bi bi-person-fill"></i></div>';
         }
 
-        // --- LOGIKA FOTO / ICON CSS ---
-        $foto_path = "img/siswa/" . $row['foto'];
-        if(!empty($row['foto']) && file_exists($foto_path)){
-            $img_html = '<img src="'.$foto_path.'" class="log-img shadow-sm" alt="foto">';
-        } else {
-            // Jika foto tidak ada, gunakan CSS Icon
-            $img_html = '<div class="log-icon-css shadow-sm"><i class="bi bi-person-fill"></i></div>';
-        }
-        
         echo '
-        <div class="log-item shadow-sm">
-            '.$img_html.'
-            <div style="flex:1">
-                <div class="log-name">'.htmlspecialchars($row['nama']).'</div>
-                <div class="log-info">'.htmlspecialchars($row['kelas']).'</div>
-            </div>
-            <div class="text-end">
-                <div class="log-time" style="background: '.$color.'15; color: '.$color.';">'.$jam_tampil.'</div>
-                <div style="font-size: 0.55rem; font-weight: 800; color: #94a3b8; margin-top:3px;">'.$label.'</div>
+        <div class="log-item shadow-sm p-3 mb-2 bg-white rounded-4 border d-flex align-items-center gap-3">
+            ' . $img_html . '
+            <div style="flex: 1; min-width: 0;">
+                <div class="fw-bold text-dark text-truncate" style="font-size: 0.95rem;">' . htmlspecialchars($row['nama']) . '</div>
+                <div style="font-size: 0.8rem;" class="mt-1">
+                    <span class="fw-bold ' . $color_class . '">' . $label_waktu . '</span>
+                    <span class="text-muted ms-2">• ' . htmlspecialchars($row['kelas']) . '</span>
+                </div>
             </div>
         </div>';
     }
 } else {
-    echo '<div class="text-center py-5 text-muted small">Belum ada aktivitas hari ini.</div>';
+    echo '<div class="text-center py-5 text-muted small"><i class="bi bi-info-circle me-1"></i>Belum ada aktivitas absensi hari ini.</div>';
 }
 ?>
