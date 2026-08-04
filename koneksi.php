@@ -12,7 +12,7 @@ if (file_exists(__DIR__ . '/koneksi_env.php')) {
     if (strpos($host_header, 'rqt.porcalabs.my.id') !== false) {
         $host = "localhost";
         $user = "sql_rqt";
-        $pass = ""; // Ganti di koneksi_env.php di server
+        $pass = "bee5ccfa4f5b18"; // Ganti di koneksi_env.php di server
         $db   = "sql_rqt";
     } elseif ($host_header == 'demo-absensi.porcalabs.com' || $host_header == '146.235.16.115') {
         $host = "localhost";
