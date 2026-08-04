@@ -281,17 +281,30 @@ include 'header.php';
         }
     }
 
+    function getNamaBelakang(nama) {
+        if (!nama) return "";
+        let parts = nama.trim().split(/\s+/);
+        return parts[parts.length - 1];
+    }
+
     function bicara(teks) {
         if (!isSoundOn) return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(teks);
-        msg.lang = 'id-ID';
         msg.rate = 1.0;
         
         const voices = window.speechSynthesis.getVoices();
-        const suaraId = voices.find(v => v.lang === 'id-ID' || v.lang.startsWith('id-') || v.lang.startsWith('id_') || v.name.toLowerCase().includes('indonesia'));
-        if (suaraId) {
-            msg.voice = suaraId;
+        const voiceEn = voices.find(v => v.lang.startsWith('en-') || v.lang.startsWith('en_') || v.name.toLowerCase().includes('english'));
+        const voiceId = voices.find(v => v.lang.startsWith('id-') || v.lang.startsWith('id_') || v.name.toLowerCase().includes('indonesia'));
+        
+        if (voiceEn) {
+            msg.voice = voiceEn;
+            msg.lang = voiceEn.lang;
+        } else if (voiceId) {
+            msg.voice = voiceId;
+            msg.lang = voiceId.lang;
+        } else {
+            msg.lang = 'en-US';
         }
         window.speechSynthesis.speak(msg);
     }
@@ -353,24 +366,26 @@ include 'header.php';
 
                     $('#m-pesan').text(d.pesan).removeClass('alert-success alert-danger alert-warning');
                     
+                    const namaBelakang = getNamaBelakang(d.nama);
+
                     if(d.status === 'success') {
                         $('#m-pesan').addClass('alert-success');
                         if(isSoundOn) document.getElementById('snd-success').play();
                         if (d.tipe_absen === 'pulang') {
-                            bicara("Terima kasih " + (d.nama || "Siswa") + ", Anda telah melakukan absen pulang. Hati-hati di jalan.");
+                            bicara("Goodbye " + namaBelakang);
                         } else if (d.status_telat === 'Terlambat') {
-                            bicara("Anda terlambat " + (d.nama || "Siswa") + ", Waktu yang terlewat tidak bisa kembali. Jadikan ini pelajaran untuk lebih disiplin.");
+                            bicara("Your Late " + namaBelakang);
                         } else {
-                            bicara("Terima kasih " + (d.nama || "Siswa") + ", Anda telah datang tepat waktu. Disiplin adalah kunci kesuksesan.");
+                            bicara("Welcome " + namaBelakang);
                         }
                     } else if(d.status === 'warning') {
                         $('#m-pesan').addClass('alert-warning');
                         if(isSoundOn) document.getElementById('snd-fail').play();
-                        bicara("Maaf " + (d.nama || "Siswa") + ", Anda sudah melakukan absensi sebelumnya.");
+                        bicara("You Already Checkin");
                     } else {
                         $('#m-pesan').addClass('alert-danger');
                         if(isSoundOn) document.getElementById('snd-fail').play();
-                        bicara("Absen gagal. Kartu atau NIS tidak dikenal.");
+                        bicara("Attendance Failed");
                     }
 
                     $('#loading-spinner').hide(); $('#result-content').fadeIn();
