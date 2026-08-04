@@ -1,5 +1,6 @@
 <?php
 include 'koneksi.php';
+include_once 'spp_init_db.php';
 
 function xss($data) {
     return htmlspecialchars($data ?? '', ENT_QUOTES, 'UTF-8');

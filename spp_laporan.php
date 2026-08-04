@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'koneksi.php';
+include_once 'spp_init_db.php';
 
 if (!isset($_SESSION['login'])) { header("location: login.php"); exit; }
 $role = strtolower(trim($_SESSION['role'] ?? ''));
