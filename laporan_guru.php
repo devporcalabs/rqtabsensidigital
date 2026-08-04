@@ -176,12 +176,38 @@ include 'header.php';
         .btn-vibrant { 
             border-radius: 15px; padding: 10px 20px; font-weight: 700; transition: 0.3s; 
         }
-        .btn-vibrant:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .nav-pills .nav-link {
+            border-radius: 30px;
+            font-weight: 700;
+            padding: 8px 24px;
+            color: #64748b;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
 
-<div class="container py-5" style="margin-top: 50px;">
+<div class="container py-2">
+
+    <!-- Tab Navigasi Laporan Siswa & Guru -->
+    <div class="d-flex justify-content-center mb-4">
+        <ul class="nav nav-pills bg-white p-1 rounded-pill shadow-sm">
+            <li class="nav-item">
+                <a class="nav-link" href="laporan.php">
+                    <i class="bi bi-people-fill me-2"></i>Laporan Siswa
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="laporan_guru.php">
+                    <i class="bi bi-person-badge-fill me-2"></i>Laporan Guru
+                </a>
+            </li>
+        </ul>
+    </div>
+
     <div class="glass-card p-4 mb-4">
         <form method="GET">
             <div class="row g-3 align-items-end">

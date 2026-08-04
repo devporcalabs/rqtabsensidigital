@@ -331,9 +331,23 @@ if (empty($initials)) $initials = "AD";
         <?php endif; ?>
         
         <?php if ($role !== 'kantin'): ?>
-        <a href="laporan.php" class="sidebar-nav-link <?= ($current_page == 'laporan.php') ? 'active' : ''; ?>">
-            <i class="bi bi-file-earmark-bar-graph-fill"></i> Laporan
+        <a class="sidebar-nav-link <?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseLaporan" role="button" aria-expanded="<?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'true' : 'false'; ?>" aria-controls="collapseLaporan">
+            <i class="bi bi-file-earmark-bar-graph-fill"></i> Laporan <i class="bi bi-chevron-down ms-auto" style="font-size: 0.8rem;"></i>
         </a>
+        <div class="collapse <?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'show' : ''; ?>" id="collapseLaporan" style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem;">
+            <a href="laporan.php" class="sidebar-nav-link <?= ($current_page == 'laporan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-file-earmark-text"></i> Laporan Siswa
+            </a>
+            <a href="laporan_guru.php" class="sidebar-nav-link <?= ($current_page == 'laporan_guru.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-person-badge"></i> Laporan Guru
+            </a>
+            <a href="rekap_bulanan.php" class="sidebar-nav-link <?= ($current_page == 'rekap_bulanan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-calendar-check"></i> Rekap Bulanan
+            </a>
+            <a href="input_manual.php" class="sidebar-nav-link <?= ($current_page == 'input_manual.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
+                <i class="bi bi-pencil-square"></i> Input Manual
+            </a>
+        </div>
         <?php endif; ?>
     </div>
     
@@ -350,27 +364,24 @@ if (empty($initials)) $initials = "AD";
     </div>
 </div>
 
-<!-- Mobile Navbar -->
+<!-- Mobile Top Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
-    <div class="container">
+    <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="dashboard.php">
-            <img src="img/<?= htmlspecialchars($data['logo_sekolah'] ?? 'porcalabs.ico'); ?>" width="35" height="35" class="rounded-circle bg-white shadow-sm" style="object-fit: contain; padding: 2px;">
-            <span class="fw-bold"><?= htmlspecialchars($data['nama_sekolah'] ?? 'Sistem Absensi'); ?></span>
+            <img src="img/<?= htmlspecialchars($data['logo_sekolah'] ?? 'porcalabs.ico'); ?>" height="32" class="rounded bg-white p-1">
+            <span class="fw-bold"><?= htmlspecialchars($data['nama_sekolah'] ?? 'Rumah Quran'); ?></span>
         </a>
-        
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-
+        
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto gap-2">
-                <?php if ($role !== 'kantin'): ?>
+            <ul class="navbar-nav ms-auto py-2">
                 <li class="nav-item">
                     <a class="nav-link <?= ($current_page == 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php">
-                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        <i class="bi bi-grid me-1"></i> Dashboard
                     </a>
                 </li>
-                <?php endif; ?>
                 
                 <?php if ($role == 'admin'): ?>
                 <li class="nav-item">
@@ -414,10 +425,33 @@ if (empty($initials)) $initials = "AD";
                 <?php endif; ?>
 
                 <?php if ($role !== 'kantin'): ?>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'laporan.php') ? 'active' : ''; ?>" href="laporan.php">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'active' : ''; ?>" href="#" id="navbarDropdownLaporan" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-file-earmark-bar-graph me-1"></i> Laporan
                     </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="navbarDropdownLaporan" style="border-radius: 12px; padding: 10px;">
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'laporan.php') ? 'active bg-primary text-white' : ''; ?>" href="laporan.php">
+                                <i class="bi bi-file-earmark-text me-2"></i> Laporan Siswa
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'laporan_guru.php') ? 'active bg-primary text-white' : ''; ?>" href="laporan_guru.php">
+                                <i class="bi bi-person-badge me-2"></i> Laporan Guru
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'rekap_bulanan.php') ? 'active bg-primary text-white' : ''; ?>" href="rekap_bulanan.php">
+                                <i class="bi bi-calendar-check me-2"></i> Rekap Bulanan
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'input_manual.php') ? 'active bg-primary text-white' : ''; ?>" href="input_manual.php">
+                                <i class="bi bi-pencil-square me-2"></i> Input Manual
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 

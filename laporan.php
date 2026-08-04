@@ -199,6 +199,23 @@ include 'header.php';
 <body>
 
 <div class="container py-2">
+
+    <!-- Tab Navigasi Laporan Siswa & Guru -->
+    <div class="d-flex justify-content-center mb-4">
+        <ul class="nav nav-pills bg-white p-1 rounded-pill shadow-sm">
+            <li class="nav-item">
+                <a class="nav-link active" href="laporan.php">
+                    <i class="bi bi-people-fill me-2"></i>Laporan Siswa
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="laporan_guru.php">
+                    <i class="bi bi-person-badge-fill me-2"></i>Laporan Guru
+                </a>
+            </li>
+        </ul>
+    </div>
+
     <div class="glass-card p-4 mb-4">
         <form method="GET">
             <div class="row g-3 align-items-end">

@@ -12,6 +12,7 @@ if(!isset($_SESSION['login'])){ header("location: login.php"); exit; }
 $role = $_SESSION['role'];
 $nama_user = $_SESSION['nama'] ?? 'User';
 $kelas_diampu = $_SESSION['kelas_diampu'] ?? '';
+$tipe_target = $_GET['tipe'] ?? 'siswa';
 
 // --- 1. AMBIL PENGATURAN ---
 $stmt_set = $conn->prepare("SELECT * FROM pengaturan WHERE id=1");
@@ -20,10 +21,8 @@ $res_set = $stmt_set->get_result()->fetch_assoc();
 $nama_sekolah = $res_set['nama_sekolah'] ?? "SISTEM ABSENSI";
 $libur_pekanan = $res_set['libur_pekanan'] ?? "Minggu";
 
-// PERUBAHAN: Ubah string libur menjadi array
 $libur_rutin_array = explode(',', $libur_pekanan);
 
-// Array untuk mapping angka hari dari fungsi date('N') ke nama hari bahasa Indonesia
 $map_hari_indo = [
     1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 
     5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'
@@ -32,8 +31,10 @@ $map_hari_indo = [
 // --- 2. AMBIL DAFTAR LIBUR MANUAL ---
 $libur_manual = [];
 $q_libur_man = mysqli_query($conn, "SELECT tanggal FROM libur_manual");
-while($lm = mysqli_fetch_assoc($q_libur_man)){
-    $libur_manual[] = $lm['tanggal'];
+if ($q_libur_man) {
+    while($lm = mysqli_fetch_assoc($q_libur_man)){
+        $libur_manual[] = $lm['tanggal'];
+    }
 }
 
 // --- 3. FILTER & SANITIZATION ---
@@ -41,34 +42,59 @@ $bulan_pilih = isset($_GET['bulan']) ? sprintf("%02d", (int)$_GET['bulan']) : da
 $tahun_pilih = isset($_GET['tahun']) ? (int)$_GET['tahun'] : date('Y');
 $kelas_pilih = ($role == 'walikelas') ? $kelas_diampu : (isset($_GET['kelas']) ? $_GET['kelas'] : '');
 
-$jumlah_hari = cal_days_in_month(CAL_GREGORIAN, (int)$bulan_pilih, (int)$tahun_pilih);
+// SANGAT PENTING: Gunakan date('t') agar tidak error jika ekstensi PHP 'calendar' tidak aktif
+$jumlah_hari = (int)date('t', strtotime("$tahun_pilih-$bulan_pilih-01"));
+
 $nama_bulan_indo = [
     '01'=>'Januari', '02'=>'Februari', '03'=>'Maret', '04'=>'April', '05'=>'Mei', '06'=>'Juni',
     '07'=>'Juli', '08'=>'Agustus', '09'=>'September', '10'=>'Oktober', '11'=>'November', '12'=>'Desember'
 ];
 
-// --- 4. AMBIL DATA SISWA & ABSENSI ---
-$siswa = [];
-$data_absen = [];
+// --- 4. AMBIL DATA SISWA / GURU & ABSENSI ---
+$person_list = [];
+$data_absen  = [];
 
-if(!empty($kelas_pilih)){
-    $stmt_siswa = $conn->prepare("SELECT nis, nama FROM siswa WHERE kelas=? ORDER BY nama ASC");
-    $stmt_siswa->bind_param("s", $kelas_pilih);
-    $stmt_siswa->execute();
-    $res_siswa = $stmt_siswa->get_result();
-    while($s = $res_siswa->fetch_assoc()){ $siswa[] = $s; }
+if ($tipe_target === 'guru') {
+    // Ambil data Guru
+    $stmt_guru = $conn->prepare("SELECT nip as id_code, nama FROM guru ORDER BY nama ASC");
+    $stmt_guru->execute();
+    $res_guru = $stmt_guru->get_result();
+    while($g = $res_guru->fetch_assoc()){ $person_list[] = $g; }
 
-    $sql_absen = "SELECT nis, DAY(waktu_masuk) as tgl, keterangan FROM absensi 
+    $sql_absen = "SELECT nip as id_code, DAY(waktu_masuk) as tgl, keterangan FROM absensi_guru 
                   WHERE MONTH(waktu_masuk) = ? 
-                  AND YEAR(waktu_masuk) = ? 
-                  AND nis IN (SELECT nis FROM siswa WHERE kelas=?)";
+                  AND YEAR(waktu_masuk) = ?";
     $stmt_absen = $conn->prepare($sql_absen);
-    $stmt_absen->bind_param("sss", $bulan_pilih, $tahun_pilih, $kelas_pilih);
+    $bulan_int = (int)$bulan_pilih;
+    $tahun_int = (int)$tahun_pilih;
+    $stmt_absen->bind_param("ii", $bulan_int, $tahun_int);
     $stmt_absen->execute();
     $res_absen = $stmt_absen->get_result();
     while($row = $res_absen->fetch_assoc()){
-        // Ambil inisial depan (H untuk Hadir, B untuk Bolos, S untuk Sakit, I untuk Izin)
-        $data_absen[$row['nis']][(int)$row['tgl']] = strtoupper(substr($row['keterangan'], 0, 1));
+        $data_absen[$row['id_code']][(int)$row['tgl']] = strtoupper(substr($row['keterangan'] ?? 'H', 0, 1));
+    }
+} else {
+    // Ambil data Siswa per Kelas
+    if(!empty($kelas_pilih)){
+        $stmt_siswa = $conn->prepare("SELECT nis as id_code, nama FROM siswa WHERE kelas=? ORDER BY nama ASC");
+        $stmt_siswa->bind_param("s", $kelas_pilih);
+        $stmt_siswa->execute();
+        $res_siswa = $stmt_siswa->get_result();
+        while($s = $res_siswa->fetch_assoc()){ $person_list[] = $s; }
+
+        $sql_absen = "SELECT nis as id_code, DAY(waktu_masuk) as tgl, keterangan FROM absensi 
+                      WHERE MONTH(waktu_masuk) = ? 
+                      AND YEAR(waktu_masuk) = ? 
+                      AND nis IN (SELECT nis FROM siswa WHERE kelas=?)";
+        $stmt_absen = $conn->prepare($sql_absen);
+        $bulan_int = (int)$bulan_pilih;
+        $tahun_int = (int)$tahun_pilih;
+        $stmt_absen->bind_param("iis", $bulan_int, $tahun_int, $kelas_pilih);
+        $stmt_absen->execute();
+        $res_absen = $stmt_absen->get_result();
+        while($row = $res_absen->fetch_assoc()){
+            $data_absen[$row['id_code']][(int)$row['tgl']] = strtoupper(substr($row['keterangan'] ?? 'H', 0, 1));
+        }
     }
 }
 
@@ -79,17 +105,29 @@ include 'header.php';
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Rekap Bulanan - <?= xss($kelas_pilih) ?></title>
+    <title>Rekap Bulanan - <?= xss($tipe_target === 'guru' ? 'Guru' : $kelas_pilih) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; color: #333; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f3f9; color: #333; }
         .nama-col { position: sticky; left: 0; background: white !important; z-index: 2; min-width: 160px; border-right: 2px solid #dee2e6 !important; }
         .h { background-color: #d1e7dd !important; color: #0f5132 !important; }
         .s { background-color: #fff3cd !important; color: #664d03 !important; }
         .i { background-color: #cff4fc !important; color: #055160 !important; }
         .a { background-color: #f8d7da !important; color: #842029 !important; }
         .l { background-color: #e9ecef !important; color: #6c757d !important; font-style: italic; }
+        
+        .nav-pills .nav-link {
+            border-radius: 30px;
+            font-weight: 700;
+            padding: 8px 24px;
+            color: #64748b;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+
         @media print {
             @page { size: landscape; margin: 0.3cm; }
             nav, header, .navbar, .no-print, .btn { display: none !important; }
@@ -107,13 +145,33 @@ include 'header.php';
 <div class="container-fluid py-4">
     <div class="print-header">
         <h5 class="mb-0"><?= strtoupper(xss($nama_sekolah)) ?></h5>
-        <h5 class="mb-1">REKAPITULASI ABSENSI SISWA</h5>
-        <p>Bulan: <?= xss($nama_bulan_indo[$bulan_pilih]) ?> <?= xss($tahun_pilih) ?> | Lembaga: <?= xss($kelas_pilih) ?></p>
+        <h5 class="mb-1">REKAPITULASI ABSENSI BULANAN <?= $tipe_target === 'guru' ? 'GURU / STAF' : 'SISWA' ?></h5>
+        <p>Bulan: <?= xss($nama_bulan_indo[$bulan_pilih] ?? '') ?> <?= xss($tahun_pilih) ?> <?= $tipe_target === 'siswa' ? '| Lembaga: ' . xss($kelas_pilih) : '' ?></p>
+    </div>
+
+    <!-- Nav Pills Target: Siswa vs Guru -->
+    <div class="d-flex justify-content-center mb-4 no-print">
+        <ul class="nav nav-pills bg-white p-1 rounded-pill shadow-sm">
+            <li class="nav-item">
+                <a class="nav-link <?= $tipe_target === 'siswa' ? 'active' : '' ?>" href="rekap_bulanan.php?tipe=siswa&bulan=<?= $bulan_pilih ?>&tahun=<?= $tahun_pilih ?>&kelas=<?= urlencode($kelas_pilih) ?>">
+                    <i class="bi bi-people-fill me-2"></i>Rekap Siswa
+                </a>
+            </li>
+            <?php if($role == 'admin' || $role == 'piket'): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $tipe_target === 'guru' ? 'active' : '' ?>" href="rekap_bulanan.php?tipe=guru&bulan=<?= $bulan_pilih ?>&tahun=<?= $tahun_pilih ?>">
+                    <i class="bi bi-person-badge-fill me-2"></i>Rekap Guru / Staf
+                </a>
+            </li>
+            <?php endif; ?>
+        </ul>
     </div>
 
     <div class="card shadow-sm border-0 p-4 mb-4 no-print">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-bold text-primary m-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Rekap Bulanan</h4>
+            <h4 class="fw-bold text-primary m-0">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i>Rekap Bulanan <?= $tipe_target === 'guru' ? 'Guru' : 'Siswa' ?>
+            </h4>
             <div>
                 <a href="dashboard.php" class="btn btn-outline-secondary rounded-pill px-4 me-2">Kembali</a>
                 <button onclick="window.print()" class="btn btn-danger rounded-pill px-4 shadow-sm fw-bold">
@@ -121,7 +179,10 @@ include 'header.php';
                 </button>
             </div>
         </div>
+
         <form method="GET" class="row g-3">
+            <input type="hidden" name="tipe" value="<?= xss($tipe_target) ?>">
+            
             <div class="col-md-3">
                 <label class="small fw-bold">Bulan</label>
                 <select name="bulan" class="form-select border-0 bg-light">
@@ -138,9 +199,11 @@ include 'header.php';
                     <?php endfor; ?>
                 </select>
             </div>
+            
+            <?php if($tipe_target === 'siswa'): ?>
             <div class="col-md-3">
-                <label class="small fw-bold">Lembaga</label>
-                <?php if($role == 'admin'): ?>
+                <label class="small fw-bold">Lembaga / Kelas</label>
+                <?php if($role == 'admin' || $role == 'piket'): ?>
                 <select name="kelas" class="form-select border-0 bg-light" required>
                     <option value="">-- Pilih Lembaga --</option>
                     <?php 
@@ -154,30 +217,36 @@ include 'header.php';
                 <input type="hidden" name="kelas" value="<?= xss($kelas_diampu) ?>">
                 <?php endif; ?>
             </div>
+            <?php else: ?>
+            <div class="col-md-3">
+                <label class="small fw-bold">Target</label>
+                <input type="text" class="form-control bg-light border-0 fw-bold text-success" value="Seluruh Guru & Staf" readonly>
+            </div>
+            <?php endif; ?>
+
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100 fw-bold">Tampilkan</button>
             </div>
         </form>
     </div>
 
-    <?php if(!empty($siswa)): ?>
+    <?php if(!empty($person_list)): ?>
     <div class="card shadow-sm border-0 overflow-hidden">
         <div class="table-responsive">
             <table class="table table-bordered text-center align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
                         <th rowspan="2" width="40">No</th>
-                        <th rowspan="2" class="nama-col" style="color: black;">Nama Siswa</th>
-                        <th colspan="<?= $jumlah_hari ?>">Tanggal (<?= xss($nama_bulan_indo[$bulan_pilih]) ?>)</th>
+                        <th rowspan="2" class="nama-col" style="color: black;">Nama <?= $tipe_target === 'guru' ? 'Guru' : 'Siswa' ?></th>
+                        <th colspan="<?= $jumlah_hari ?>">Tanggal (<?= xss($nama_bulan_indo[$bulan_pilih] ?? '') ?> <?= $tahun_pilih ?>)</th>
                         <th colspan="4">Total</th>
                     </tr>
                     <tr>
                         <?php for($d=1; $d<=$jumlah_hari; $d++): 
                             $dt = "$tahun_pilih-$bulan_pilih-" . sprintf("%02d", $d);
-                            $day_n = date('N', strtotime($dt)); // Angka 1 (Senin) - 7 (Minggu)
-                            $nama_hari_ini = $map_hari_indo[$day_n]; // Dikonversi ke nama hari
+                            $day_n = date('N', strtotime($dt)); 
+                            $nama_hari_ini = $map_hari_indo[$day_n] ?? '';
                             
-                            // Pengecekan hari libur rutin (array) atau libur manual
                             $is_red = (in_array($nama_hari_ini, $libur_rutin_array) || in_array($dt, $libur_manual));
                         ?>
                         <th style="font-size: 9px;" class="<?= $is_red ? 'text-danger' : '' ?>"><?= $d ?></th>
@@ -186,25 +255,23 @@ include 'header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php $no=1; foreach($siswa as $s): 
-                        $nis = $s['nis'];
+                    <?php $no=1; foreach($person_list as $p): 
+                        $id_code = $p['id_code'];
                         $th=0; $ts=0; $ti=0; $ta=0;
                     ?>
                     <tr>
                         <td><?= $no++ ?></td>
-                        <td class="nama-col fw-bold text-start small"><?= xss($s['nama']) ?></td>
+                        <td class="nama-col fw-bold text-start small"><?= xss($p['nama']) ?></td>
                         <?php for($d=1; $d<=$jumlah_hari; $d++): 
                             $dt = "$tahun_pilih-$bulan_pilih-" . sprintf("%02d", $d);
-                            $day_n = date('N', strtotime($dt)); // Angka 1-7
-                            $nama_hari_ini = $map_hari_indo[$day_n];
+                            $day_n = date('N', strtotime($dt)); 
+                            $nama_hari_ini = $map_hari_indo[$day_n] ?? '';
                             
-                            // Pengecekan hari libur rutin (array) atau libur manual
                             $is_libur = (in_array($nama_hari_ini, $libur_rutin_array) || in_array($dt, $libur_manual));
                             
-                            $st = $data_absen[$nis][$d] ?? '';
+                            $st = $data_absen[$id_code][$d] ?? '';
                             $cls = ""; $char = ".";
 
-                            // MODIFIKASI DISINI: Jika status 'H' (Hadir) atau 'B' (Bolos), tampilkan 'H'
                             if($st == 'H' || $st == 'B'){ 
                                 $char='H'; $cls='h'; $th++; 
                             }
@@ -230,6 +297,10 @@ include 'header.php';
             </table>
         </div>
     </div>
+    <?php elseif($tipe_target === 'siswa' && empty($kelas_pilih)): ?>
+        <div class="card p-5 text-center shadow-sm border-0 no-print">
+            <h5 class="text-muted"><i class="bi bi-info-circle me-2"></i>Silakan pilih Lembaga / Kelas untuk menampilkan rekap bulanan siswa.</h5>
+        </div>
     <?php endif; ?>
 </div>
 </body>

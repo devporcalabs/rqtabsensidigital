@@ -7,34 +7,32 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 function xss($data) {
-    return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars($data ?? '', ENT_QUOTES, 'UTF-8');
 }
 
 // Cek Login
 if(!isset($_SESSION['login'])){ header("location: login.php"); exit; }
 
-// PERBAIKAN 1: Pastikan role diformat huruf kecil agar tidak ada kendala case-sensitive
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 $kelas_diampu = $_SESSION['kelas_diampu'] ?? '';
-$user_login = $_SESSION['nama'];
+$user_login = $_SESSION['nama'] ?? 'User';
 
-// PERBAIKAN 2: Jika session kelas_diampu kosong saat login, ambil otomatis dari tabel users
+// Tipe target: 'siswa' atau 'guru'
+$tipe_target = $_GET['tipe'] ?? 'siswa';
+
 if ($role === 'walikelas' && empty($kelas_diampu)) {
-    // $stmt_get_kelas = $conn->prepare("SELECT kelas_diampu FROM users WHERE nama = ?");
-    // $stmt_get_kelas = $conn->prepare("SELECT kelas_diampu FROM users WHERE username = ?");
     $stmt_get_kelas = $conn->prepare("SELECT kelas_diampu FROM users WHERE nama_lengkap = ?");
     $stmt_get_kelas->bind_param("s", $user_login);
     $stmt_get_kelas->execute();
     $res_get_kelas = $stmt_get_kelas->get_result();
     if ($row_kelas = $res_get_kelas->fetch_assoc()) {
         $kelas_diampu = $row_kelas['kelas_diampu'];
-        $_SESSION['kelas_diampu'] = $kelas_diampu; // Simpan ke session
+        $_SESSION['kelas_diampu'] = $kelas_diampu;
     }
 }
 
-// --- 1. PROSES SIMPAN DATA (KEAMANAN TINGKAT DEWA) ---
-if(isset($_POST['simpan'])){
-    // Validasi CSRF
+// --- 1. PROSES SIMPAN DATA ABSENSI SISWA ---
+if(isset($_POST['simpan_siswa'])){
     if(!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']){
         die("Serangan CSRF terdeteksi!");
     }
@@ -44,7 +42,6 @@ if(isset($_POST['simpan'])){
     $nis_array = $_POST['nis']; 
     $ket_array = $_POST['keterangan']; 
 
-    // Prepare Statements untuk efisiensi & keamanan
     $stmt_cek = $conn->prepare("SELECT id FROM absensi WHERE nis = ? AND DATE(waktu_masuk) = ?");
     $stmt_upd = $conn->prepare("UPDATE absensi SET keterangan = ?, input_by = ? WHERE nis = ? AND DATE(waktu_masuk) = ?");
     $stmt_ins = $conn->prepare("INSERT INTO absensi (nis, waktu_masuk, keterangan, input_by) VALUES (?, ?, ?, ?)");
@@ -61,7 +58,6 @@ if(isset($_POST['simpan'])){
             $stmt_upd->bind_param("ssss", $ket_baru, $log_edit, $nis, $tgl);
             $stmt_upd->execute();
         } else {
-            // Jika bukan Alpha, maka insert (Alpha dianggap sebagai 'belum absen' secara default di laporan)
             if($ket_baru != 'Alpha'){
                 $waktu_lengkap = $tgl . " 07:00:00"; 
                 $stmt_ins->bind_param("ssss", $nis, $waktu_lengkap, $ket_baru, $user_login);
@@ -69,31 +65,82 @@ if(isset($_POST['simpan'])){
             }
         }
     }
-    echo "<script>alert('Data absensi berhasil diperbarui!'); window.location='input_manual.php?tanggal=$tgl&kelas=$kelas_pilih_post';</script>";
+    echo "<script>alert('Data absensi siswa berhasil diperbarui!'); window.location='input_manual.php?tipe=siswa&tanggal=$tgl&kelas=$kelas_pilih_post';</script>";
 }
 
-// --- 2. LOGIKA FILTER ---
+// --- 2. PROSES SIMPAN DATA ABSENSI GURU ---
+if(isset($_POST['simpan_guru'])){
+    if(!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']){
+        die("Serangan CSRF terdeteksi!");
+    }
+
+    $tgl = $_POST['tanggal'];
+    $nip_array = $_POST['nip']; 
+    $ket_array = $_POST['keterangan']; 
+
+    $stmt_cek = $conn->prepare("SELECT id FROM absensi_guru WHERE nip = ? AND DATE(waktu_masuk) = ?");
+    $stmt_upd = $conn->prepare("UPDATE absensi_guru SET keterangan = ?, input_by = ? WHERE nip = ? AND DATE(waktu_masuk) = ?");
+    $stmt_ins = $conn->prepare("INSERT INTO absensi_guru (nip, waktu_masuk, keterangan, input_by) VALUES (?, ?, ?, ?)");
+
+    foreach($nip_array as $key => $nip){
+        $ket_baru = $ket_array[$key]; 
+        
+        $stmt_cek->bind_param("ss", $nip, $tgl);
+        $stmt_cek->execute();
+        $res_cek = $stmt_cek->get_result();
+        
+        if($res_cek->num_rows > 0){
+            $log_edit = $user_login . " (Edit)";
+            $stmt_upd->bind_param("ssss", $ket_baru, $log_edit, $nip, $tgl);
+            $stmt_upd->execute();
+        } else {
+            if($ket_baru != 'Alpha'){
+                $waktu_lengkap = $tgl . " 07:00:00"; 
+                $stmt_ins->bind_param("ssss", $nip, $waktu_lengkap, $ket_baru, $user_login);
+                $stmt_ins->execute();
+            }
+        }
+    }
+    echo "<script>alert('Data absensi guru berhasil diperbarui!'); window.location='input_manual.php?tipe=guru&tanggal=$tgl';</script>";
+}
+
+// --- 3. LOGIKA FILTER ---
 $tgl_pilih = $_GET['tanggal'] ?? date('Y-m-d');
-// Tentukan kelas terpilih
 $kelas_pilih = ($role == 'walikelas') ? $kelas_diampu : ($_GET['kelas'] ?? '');
 
-// Ambil Daftar Kelas (Prepared)
+// Ambil Daftar Kelas
 $q_kelas = mysqli_query($conn, "SELECT nama_kelas FROM kelas ORDER BY nama_kelas ASC");
 
-// --- 3. AMBIL DATA SISWA (PREPARED STATEMENT) ---
+// --- 4. AMBIL DATA SISWA ATAL GURU ---
 $data_siswa = [];
-if($kelas_pilih != ''){
-    $sql_siswa = "SELECT s.nis, s.nama, a.keterangan 
-                  FROM siswa s
-                  LEFT JOIN absensi a ON s.nis = a.nis AND DATE(a.waktu_masuk) = ?
-                  WHERE s.kelas = ? 
-                  ORDER BY s.nama ASC";
-    $stmt_siswa = $conn->prepare($sql_siswa);
-    $stmt_siswa->bind_param("ss", $tgl_pilih, $kelas_pilih);
-    $stmt_siswa->execute();
-    $res_siswa = $stmt_siswa->get_result();
-    while($row = $res_siswa->fetch_assoc()){
-        $data_siswa[] = $row;
+$data_guru  = [];
+
+if ($tipe_target === 'guru') {
+    $sql_guru = "SELECT g.nip, g.nama, g.jabatan, ag.keterangan 
+                 FROM guru g
+                 LEFT JOIN absensi_guru ag ON g.nip = ag.nip AND DATE(ag.waktu_masuk) = ?
+                 ORDER BY g.nama ASC";
+    $stmt_guru = $conn->prepare($sql_guru);
+    $stmt_guru->bind_param("s", $tgl_pilih);
+    $stmt_guru->execute();
+    $res_guru = $stmt_guru->get_result();
+    while($row = $res_guru->fetch_assoc()){
+        $data_guru[] = $row;
+    }
+} else {
+    if($kelas_pilih != ''){
+        $sql_siswa = "SELECT s.nis, s.nama, a.keterangan 
+                      FROM siswa s
+                      LEFT JOIN absensi a ON s.nis = a.nis AND DATE(a.waktu_masuk) = ?
+                      WHERE s.kelas = ? 
+                      ORDER BY s.nama ASC";
+        $stmt_siswa = $conn->prepare($sql_siswa);
+        $stmt_siswa->bind_param("ss", $tgl_pilih, $kelas_pilih);
+        $stmt_siswa->execute();
+        $res_siswa = $stmt_siswa->get_result();
+        while($row = $res_siswa->fetch_assoc()){
+            $data_siswa[] = $row;
+        }
     }
 }
 
@@ -105,7 +152,7 @@ include 'header.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input Manual - Vibrant Glass</title>
+    <title>Input Manual Absensi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -114,20 +161,17 @@ include 'header.php';
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #f0f3f9;
-            background-image: radial-gradient(at 0% 0%, rgba(13, 110, 253, 0.05) 0px, transparent 50%);
             min-height: 100vh;
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.03);
         }
 
-        /* Status Pills */
         .status-pill { padding: 4px 12px; border-radius: 50px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
         .pill-hadir { background: #dcfce7; color: #166534; }
         .pill-sakit { background: #fef9c3; color: #854d0e; }
@@ -135,37 +179,33 @@ include 'header.php';
         .pill-alpha { background: #fee2e2; color: #991b1b; }
         .pill-bolos { background: #450a0a; color: #ffffff; }
 
-        /* Custom Radio Buttons */
         .btn-check:checked + .btn-outline-success { background: #10b981; color: white; border-color: #10b981; }
         .btn-check:checked + .btn-outline-warning { background: #f59e0b; color: white; border-color: #f59e0b; }
         .btn-check:checked + .btn-outline-info { background: #0ea5e9; color: white; border-color: #0ea5e9; }
         .btn-check:checked + .btn-outline-danger { background: #ef4444; color: white; border-color: #ef4444; }
         .btn-check:checked + .btn-outline-dark { background: #7f1d1d; color: white; border-color: #7f1d1d; }
 
-        .form-select, .form-control {
-            border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.05);
-            background: rgba(255,255,255,0.8);
+        .nav-pills .nav-link {
+            border-radius: 30px;
+            font-weight: 700;
+            padding: 8px 24px;
+            color: #64748b;
         }
-
-        .table thead th { 
-            background: rgba(13, 110, 253, 0.05); 
-            color: #0d6efd; 
-            font-size: 0.75rem; 
-            letter-spacing: 1px; 
-            border: none;
-            padding: 15px;
+        .nav-pills .nav-link.active {
+            background-color: #3b82f6;
+            color: #ffffff;
         }
     </style>
 </head>
 <body>
 
 <div class="container py-4">
+    <!-- Header Card -->
     <div class="glass-card p-4 mb-4 border-start border-4 border-primary">
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h4 class="fw-bold text-dark mb-1">Input Absensi Manual</h4>
-                <p class="text-muted mb-0 small">Kelola data kehadiran, izin, sakit, atau <span class="text-danger fw-bold">Bolos</span> siswa.</p>
+                <p class="text-muted mb-0 small">Kelola data kehadiran, izin, sakit, atau alpha untuk Siswa dan Guru.</p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <h5 class="text-primary fw-bold mb-0" id="live-clock">00:00:00</h5>
@@ -174,28 +214,56 @@ include 'header.php';
         </div>
     </div>
 
+    <!-- Tab Toggle Target: Siswa vs Guru -->
+    <div class="d-flex justify-content-center mb-4">
+        <ul class="nav nav-pills bg-white p-1 rounded-pill shadow-sm">
+            <li class="nav-item">
+                <a class="nav-link <?= $tipe_target === 'siswa' ? 'active' : '' ?>" href="input_manual.php?tipe=siswa&tanggal=<?= xss($tgl_pilih) ?>">
+                    <i class="bi bi-people-fill me-2"></i>Absensi Siswa
+                </a>
+            </li>
+            <?php if($role == 'admin' || $role == 'piket'): ?>
+            <li class="nav-item">
+                <a class="nav-link <?= $tipe_target === 'guru' ? 'active' : '' ?>" href="input_manual.php?tipe=guru&tanggal=<?= xss($tgl_pilih) ?>">
+                    <i class="bi bi-person-badge-fill me-2"></i>Absensi Guru / Staf
+                </a>
+            </li>
+            <?php endif; ?>
+        </ul>
+    </div>
+
+    <!-- Filter Form -->
     <div class="glass-card p-4 mb-4">
         <form method="GET" class="row g-3 align-items-end">
+            <input type="hidden" name="tipe" value="<?= xss($tipe_target) ?>">
+
             <div class="col-md-3">
                 <label class="small fw-bold text-muted mb-2">TANGGAL</label>
                 <input type="date" name="tanggal" class="form-control" value="<?= xss($tgl_pilih) ?>" required>
             </div>
             
-            <?php if($role == 'admin' || $role == 'piket'): ?>
-            <div class="col-md-4">
-                <label class="small fw-bold text-muted mb-2">PILIH LEMBAGA</label>
-                <select name="kelas" class="form-select">
-                    <option value="">-- Pilih Lembaga --</option>
-                    <?php while($k = mysqli_fetch_assoc($q_kelas)): ?>
-                        <option value="<?= xss($k['nama_kelas']) ?>" <?= $kelas_pilih == $k['nama_kelas'] ? 'selected' : '' ?>><?= xss($k['nama_kelas']) ?></option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
+            <?php if($tipe_target === 'siswa'): ?>
+                <?php if($role == 'admin' || $role == 'piket'): ?>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-muted mb-2">PILIH LEMBAGA / KELAS</label>
+                    <select name="kelas" class="form-select">
+                        <option value="">-- Pilih Lembaga --</option>
+                        <?php while($k = mysqli_fetch_assoc($q_kelas)): ?>
+                            <option value="<?= xss($k['nama_kelas']) ?>" <?= $kelas_pilih == $k['nama_kelas'] ? 'selected' : '' ?>><?= xss($k['nama_kelas']) ?></option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <?php else: ?>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-muted mb-2">LEMBAGA ANDA</label>
+                    <input type="text" class="form-control fw-bold text-primary" value="<?= xss($kelas_pilih ?: 'Lembaga Belum Diatur') ?>" readonly>
+                </div>
+                <?php endif; ?>
             <?php else: ?>
-            <div class="col-md-4">
-                <label class="small fw-bold text-muted mb-2">LEMBAGA ANDA</label>
-                <input type="text" class="form-control fw-bold text-primary" value="<?= xss($kelas_pilih ?: 'Lembaga Belum Diatur') ?>" readonly>
-            </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-muted mb-2">TARGET ABSENSI</label>
+                    <input type="text" class="form-control fw-bold text-success" value="Seluruh Guru & Staf" readonly>
+                </div>
             <?php endif; ?>
 
             <div class="col-md-2">
@@ -206,73 +274,149 @@ include 'header.php';
         </form>
     </div>
 
-    <?php if($kelas_pilih != '' && count($data_siswa) > 0): ?>
-    <form method="POST">
-        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-        <input type="hidden" name="tanggal" value="<?= xss($tgl_pilih) ?>">
-        <input type="hidden" name="kelas_pilih" value="<?= xss($kelas_pilih) ?>">
-        
-        <div class="glass-card overflow-hidden">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">No</th>
-                            <th>Nama Siswa</th>
-                            <th class="text-center">Status Sekarang</th>
-                            <th class="text-center">Ubah Ke</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($data_siswa as $idx => $s): 
-                            $ket = $s['keterangan'] ? $s['keterangan'] : 'Alpha';
-                            $pill_class = "pill-" . strtolower($ket);
-                        ?>
-                        <tr>
-                            <td class="ps-4 text-muted small"><?= $idx + 1 ?></td>
-                            <td>
-                                <div class="fw-bold text-dark"><?= xss($s['nama']) ?></div>
-                                <code class="small text-muted"><?= xss($s['nis']) ?></code>
-                                <input type="hidden" name="nis[]" value="<?= xss($s['nis']) ?>">
-                            </td>
-                            <td class="text-center">
-                                <span class="status-pill <?= $pill_class ?>"><?= $ket ?></span>
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group btn-group-sm w-100" role="group">
-                                    <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="H<?= $idx ?>" value="Hadir" <?= $ket=='Hadir'?'checked':'' ?>>
-                                    <label class="btn btn-outline-success" for="H<?= $idx ?>">Hadir</label>
+    <!-- Table Absensi Siswa -->
+    <?php if($tipe_target === 'siswa'): ?>
+        <?php if($kelas_pilih != '' && count($data_siswa) > 0): ?>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="tanggal" value="<?= xss($tgl_pilih) ?>">
+            <input type="hidden" name="kelas_pilih" value="<?= xss($kelas_pilih) ?>">
+            
+            <div class="glass-card overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">No</th>
+                                <th>Nama Siswa</th>
+                                <th class="text-center">Status Sekarang</th>
+                                <th class="text-center">Ubah Ke</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($data_siswa as $idx => $s): 
+                                $ket = $s['keterangan'] ? $s['keterangan'] : 'Alpha';
+                                $pill_class = "pill-" . strtolower($ket);
+                            ?>
+                            <tr>
+                                <td class="ps-4 text-muted small"><?= $idx + 1 ?></td>
+                                <td>
+                                    <div class="fw-bold text-dark"><?= xss($s['nama']) ?></div>
+                                    <code class="small text-muted"><?= xss($s['nis']) ?></code>
+                                    <input type="hidden" name="nis[]" value="<?= xss($s['nis']) ?>">
+                                </td>
+                                <td class="text-center">
+                                    <span class="status-pill <?= $pill_class ?>"><?= $ket ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="H<?= $idx ?>" value="Hadir" <?= $ket=='Hadir'?'checked':'' ?>>
+                                        <label class="btn btn-outline-success" for="H<?= $idx ?>">Hadir</label>
 
-                                    <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="S<?= $idx ?>" value="Sakit" <?= $ket=='Sakit'?'checked':'' ?>>
-                                    <label class="btn btn-outline-warning" for="S<?= $idx ?>">Sakit</label>
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="S<?= $idx ?>" value="Sakit" <?= $ket=='Sakit'?'checked':'' ?>>
+                                        <label class="btn btn-outline-warning" for="S<?= $idx ?>">Sakit</label>
 
-                                    <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="I<?= $idx ?>" value="Izin" <?= $ket=='Izin'?'checked':'' ?>>
-                                    <label class="btn btn-outline-info" for="I<?= $idx ?>">Izin</label>
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="I<?= $idx ?>" value="Izin" <?= $ket=='Izin'?'checked':'' ?>>
+                                        <label class="btn btn-outline-info" for="I<?= $idx ?>">Izin</label>
 
-                                    <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="B<?= $idx ?>" value="Bolos" <?= $ket=='Bolos'?'checked':'' ?>>
-                                    <label class="btn btn-outline-dark" for="B<?= $idx ?>">Bolos</label>
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="B<?= $idx ?>" value="Bolos" <?= $ket=='Bolos'?'checked':'' ?>>
+                                        <label class="btn btn-outline-dark" for="B<?= $idx ?>">Bolos</label>
 
-                                    <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="A<?= $idx ?>" value="Alpha" <?= $ket=='Alpha'?'checked':'' ?>>
-                                    <label class="btn btn-outline-danger" for="A<?= $idx ?>">Alpha</label>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="A<?= $idx ?>" value="Alpha" <?= $ket=='Alpha'?'checked':'' ?>>
+                                        <label class="btn btn-outline-danger" for="A<?= $idx ?>">Alpha</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <div class="sticky-bottom bg-white bg-opacity-80 backdrop-blur p-3 mt-4 rounded-4 shadow-lg border border-white">
-            <button type="submit" name="simpan" class="btn btn-primary w-100 py-3 rounded-pill fw-bold" onclick="return confirm('Simpan perubahan data absensi?')">
-                <i class="bi bi-cloud-arrow-up me-2"></i> SIMPAN PERUBAHAN DATA
-            </button>
-        </div>
-    </form>
-    <?php elseif($kelas_pilih != '' && count($data_siswa) == 0): ?>
-        <div class="glass-card p-5 text-center mt-4">
-            <h5 class="text-muted">Data siswa tidak ditemukan untuk lembaga <?= xss($kelas_pilih) ?>.</h5>
-        </div>
+            <div class="sticky-bottom bg-white bg-opacity-80 backdrop-blur p-3 mt-4 rounded-4 shadow-lg border border-white">
+                <button type="submit" name="simpan_siswa" class="btn btn-primary w-100 py-3 rounded-pill fw-bold" onclick="return confirm('Simpan perubahan data absensi siswa?')">
+                    <i class="bi bi-cloud-arrow-up me-2"></i> SIMPAN PERUBAHAN DATA SISWA
+                </button>
+            </div>
+        </form>
+        <?php elseif($kelas_pilih != '' && count($data_siswa) == 0): ?>
+            <div class="glass-card p-5 text-center mt-4">
+                <h5 class="text-muted">Data siswa tidak ditemukan untuk lembaga <?= xss($kelas_pilih) ?>.</h5>
+            </div>
+        <?php endif; ?>
+
+    <!-- Table Absensi Guru -->
+    <?php elseif($tipe_target === 'guru'): ?>
+        <?php if(count($data_guru) > 0): ?>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="tanggal" value="<?= xss($tgl_pilih) ?>">
+            
+            <div class="glass-card overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">No</th>
+                                <th>Nama Guru / Pegawai</th>
+                                <th>Jabatan</th>
+                                <th class="text-center">Status Sekarang</th>
+                                <th class="text-center">Ubah Ke</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($data_guru as $idx => $g): 
+                                $ket = $g['keterangan'] ? $g['keterangan'] : 'Alpha';
+                                $pill_class = "pill-" . strtolower($ket);
+                            ?>
+                            <tr>
+                                <td class="ps-4 text-muted small"><?= $idx + 1 ?></td>
+                                <td>
+                                    <div class="fw-bold text-dark"><?= xss($g['nama']) ?></div>
+                                    <code class="small text-muted">NIP: <?= xss($g['nip']) ?></code>
+                                    <input type="hidden" name="nip[]" value="<?= xss($g['nip']) ?>">
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold">
+                                        <?= xss($g['jabatan'] ?: 'Staf') ?>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="status-pill <?= $pill_class ?>"><?= $ket ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="GH<?= $idx ?>" value="Hadir" <?= $ket=='Hadir'?'checked':'' ?>>
+                                        <label class="btn btn-outline-success" for="GH<?= $idx ?>">Hadir</label>
+
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="GS<?= $idx ?>" value="Sakit" <?= $ket=='Sakit'?'checked':'' ?>>
+                                        <label class="btn btn-outline-warning" for="GS<?= $idx ?>">Sakit</label>
+
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="GI<?= $idx ?>" value="Izin" <?= $ket=='Izin'?'checked':'' ?>>
+                                        <label class="btn btn-outline-info" for="GI<?= $idx ?>">Izin</label>
+
+                                        <input type="radio" class="btn-check" name="keterangan[<?= $idx ?>]" id="GA<?= $idx ?>" value="Alpha" <?= $ket=='Alpha'?'checked':'' ?>>
+                                        <label class="btn btn-outline-danger" for="GA<?= $idx ?>">Alpha</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sticky-bottom bg-white bg-opacity-80 backdrop-blur p-3 mt-4 rounded-4 shadow-lg border border-white">
+                <button type="submit" name="simpan_guru" class="btn btn-success w-100 py-3 rounded-pill fw-bold" onclick="return confirm('Simpan perubahan data absensi guru?')">
+                    <i class="bi bi-cloud-arrow-up me-2"></i> SIMPAN PERUBAHAN DATA GURU
+                </button>
+            </div>
+        </form>
+        <?php else: ?>
+            <div class="glass-card p-5 text-center mt-4">
+                <h5 class="text-muted">Data guru / pegawai tidak ditemukan.</h5>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
 </div>
@@ -287,6 +431,6 @@ include 'header.php';
     }
     setInterval(updateClock, 1000); updateClock();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"></script>
 </body>
 </html>
