@@ -277,6 +277,22 @@ if (empty($initials)) $initials = "AD";
             border-top: 1px solid #f1f5f9;
         }
         
+        .sidebar-sub-nav {
+            padding-left: 1.25rem;
+            margin-top: 0.25rem;
+        }
+        .sidebar-sub-nav.show, .sidebar-sub-nav.collapsing {
+            display: flex !important;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .sidebar-nav-link[aria-expanded="true"] .bi-chevron-down {
+            transform: rotate(180deg);
+        }
+        .sidebar-nav-link .bi-chevron-down {
+            transition: transform 0.2s ease;
+        }
+
         .logout-modal .modal-content {
             border-radius: 24px;
             border: none;
@@ -315,7 +331,7 @@ if (empty($initials)) $initials = "AD";
         <a class="sidebar-nav-link <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseKantin" role="button" aria-expanded="<?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'true' : 'false'; ?>" aria-controls="collapseKantin">
             <i class="bi bi-shop"></i> E-Kantin <i class="bi bi-chevron-down ms-auto" style="font-size: 0.8rem;"></i>
         </a>
-        <div class="collapse <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'show' : ''; ?>" id="collapseKantin" style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem;">
+        <div class="collapse sidebar-sub-nav <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'show' : ''; ?>" id="collapseKantin">
             <a href="kantin_kasir.php" class="sidebar-nav-link <?= ($current_page == 'kantin_kasir.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
                 <i class="bi bi-calculator"></i> Kasir Kantin
             </a>
@@ -334,7 +350,7 @@ if (empty($initials)) $initials = "AD";
         <a class="sidebar-nav-link <?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseLaporan" role="button" aria-expanded="<?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'true' : 'false'; ?>" aria-controls="collapseLaporan">
             <i class="bi bi-file-earmark-bar-graph-fill"></i> Laporan <i class="bi bi-chevron-down ms-auto" style="font-size: 0.8rem;"></i>
         </a>
-        <div class="collapse <?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'show' : ''; ?>" id="collapseLaporan" style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem;">
+        <div class="collapse sidebar-sub-nav <?= in_array($current_page, ['laporan.php', 'laporan_guru.php', 'rekap_bulanan.php', 'input_manual.php']) ? 'show' : ''; ?>" id="collapseLaporan">
             <a href="laporan.php" class="sidebar-nav-link <?= ($current_page == 'laporan.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
                 <i class="bi bi-file-earmark-text"></i> Laporan Siswa
             </a>
