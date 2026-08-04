@@ -120,7 +120,7 @@ include 'header.php';
                     <option value="">-- Semua Kelas --</option>
                     <?php while ($kls = mysqli_fetch_assoc($q_kelas_list)): ?>
                     <option value="<?= xss($kls['nama_kelas']) ?>" <?= $f_kelas == $kls['nama_kelas'] ? 'selected' : '' ?>><?= xss($kls['nama_kelas']) ?></option>
-                    <?php endforeach; ?>
+                    <?php endwhile; ?>
                 </select>
             </div>
             <div class="col-md-3">

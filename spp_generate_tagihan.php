@@ -201,7 +201,7 @@ include 'header.php';
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php while ($kls = mysqli_fetch_assoc($q_kelas_list)): ?>
                                 <option value="<?= xss($kls['nama_kelas']) ?>"><?= xss($kls['nama_kelas']) ?></option>
-                                <?php endforeach; ?>
+                                <?php endwhile; ?>
                             </select>
                         </div>
 
