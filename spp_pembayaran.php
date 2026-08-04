@@ -252,6 +252,7 @@ include 'header.php';
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function prosesVerif(row, aksi) {
     document.getElementById('v-pembayaran_id').value = row.id;

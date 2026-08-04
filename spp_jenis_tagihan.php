@@ -201,11 +201,11 @@ include 'header.php';
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" name="simpan" class="btn btn-primary rounded-pill px-4 fw-bold">Simpan Data</button>
                 </div>
-            </form>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function resetForm() {
     document.getElementById('form-id').value = '0';
