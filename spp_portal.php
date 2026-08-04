@@ -26,7 +26,7 @@ if (!$tagihan) {
 }
 
 // Ambil data sekolah & pengaturan pembayaran
-$q_set = mysqli_query($conn, "SELECT * FROM setting LIMIT 1");
+$q_set = mysqli_query($conn, "SELECT * FROM pengaturan LIMIT 1");
 $sekolah = mysqli_fetch_assoc($q_set);
 $nama_sekolah = $sekolah['nama_sekolah'] ?? 'Rumah Qur\'an Temi';
 $logo_sekolah = $sekolah['logo_sekolah'] ?? 'porcalabs.ico';
