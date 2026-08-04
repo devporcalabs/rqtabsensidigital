@@ -45,7 +45,7 @@ if (isset($_POST['generate'])) {
         $result_info = ['status' => 'error', 'pesan' => 'Jenis tagihan tidak ditemukan.'];
     } else {
         // Query ambil daftar siswa target
-        $sql_siswa = "SELECT nis, nama, no_hp, kelas FROM siswa WHERE 1=1";
+        $sql_siswa = "SELECT nis, nama, no_hp_ortu AS no_hp, kelas FROM siswa WHERE 1=1";
         if ($target_siswa === 'kelas' && !empty($kelas_pilih)) {
             $sql_siswa .= " AND kelas = '" . mysqli_real_escape_string($conn, $kelas_pilih) . "'";
         } elseif ($target_siswa === 'nis' && !empty($nis_pilih)) {

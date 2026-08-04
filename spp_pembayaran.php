@@ -21,7 +21,7 @@ if (isset($_POST['verifikasi_aksi'])) {
     $petugas_id    = $_SESSION['user_id'] ?? 1;
 
     // Ambil detail pembayaran & tagihan
-    $stmt_p = $conn->prepare("SELECT p.*, t.nominal as total_tagihan, t.dibayar as total_dibayar, t.sisa as total_sisa, s.nama as nama_siswa, s.no_hp, jt.nama as nama_tagihan, t.token FROM spp_pembayaran p JOIN spp_tagihan t ON p.tagihan_id=t.id JOIN siswa s ON p.nis=s.nis JOIN spp_jenis_tagihan jt ON t.jenis_tagihan_id=jt.id WHERE p.id=?");
+    $stmt_p = $conn->prepare("SELECT p.*, t.nominal as total_tagihan, t.dibayar as total_dibayar, t.sisa as total_sisa, s.nama as nama_siswa, s.no_hp_ortu, jt.nama as nama_tagihan, t.token FROM spp_pembayaran p JOIN spp_tagihan t ON p.tagihan_id=t.id JOIN siswa s ON p.nis=s.nis JOIN spp_jenis_tagihan jt ON t.jenis_tagihan_id=jt.id WHERE p.id=?");
     $stmt_p->bind_param("i", $pembayaran_id);
     $stmt_p->execute();
     $p = $stmt_p->get_result()->fetch_assoc();

@@ -17,7 +17,7 @@ if (isset($_POST['bayar_tunai'])) {
     $petugas_id = $_SESSION['user_id'] ?? 1;
 
     // Ambil data tagihan saat ini
-    $stmt_t = $conn->prepare("SELECT t.*, s.nama, s.no_hp, s.kelas, jt.nama as nama_tagihan FROM spp_tagihan t JOIN siswa s ON t.nis=s.nis JOIN spp_jenis_tagihan jt ON t.jenis_tagihan_id=jt.id WHERE t.id=?");
+    $stmt_t = $conn->prepare("SELECT t.*, s.nama, s.no_hp_ortu, s.kelas, jt.nama as nama_tagihan FROM spp_tagihan t JOIN siswa s ON t.nis=s.nis JOIN spp_jenis_tagihan jt ON t.jenis_tagihan_id=jt.id WHERE t.id=?");
     $stmt_t->bind_param("i", $tagihan_id);
     $stmt_t->execute();
     $t = $stmt_t->get_result()->fetch_assoc();
@@ -51,7 +51,7 @@ $f_kelas  = trim($_GET['kelas'] ?? '');
 $f_status = trim($_GET['status'] ?? '');
 $f_q      = trim($_GET['q'] ?? '');
 
-$sql = "SELECT t.*, s.nama as nama_siswa, s.kelas, s.no_hp, jt.nama as nama_tagihan, jt.jatuh_tempo, jt.tahun_ajaran
+$sql = "SELECT t.*, s.nama as nama_siswa, s.kelas, s.no_hp_ortu, jt.nama as nama_tagihan, jt.jatuh_tempo, jt.tahun_ajaran
         FROM spp_tagihan t
         JOIN siswa s ON t.nis = s.nis
         JOIN spp_jenis_tagihan jt ON t.jenis_tagihan_id = jt.id

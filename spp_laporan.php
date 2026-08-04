@@ -136,7 +136,7 @@ include 'header.php';
         <?php if ($jenis_laporan == 'rekap_tunggakan'): ?>
             <!-- TABEL DAFTAR TUNGGAKAN -->
             <?php 
-            $sql_tung = "SELECT t.*, s.nama as nama_siswa, s.no_hp, s.kelas, jt.nama as nama_tagihan, jt.jatuh_tempo
+            $sql_tung = "SELECT t.*, s.nama as nama_siswa, s.no_hp_ortu, s.kelas, jt.nama as nama_tagihan, jt.jatuh_tempo
                          FROM spp_tagihan t
                          JOIN siswa s ON t.nis = s.nis
                          JOIN spp_jenis_tagihan jt ON t.jenis_tagihan_id = jt.id
