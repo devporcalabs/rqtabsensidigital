@@ -170,6 +170,13 @@ include 'header.php';
                             elseif ($row['status'] == 'Belum Bayar') $badge_color = 'bg-danger';
                             
                             $link_portal = $base_url . '/spp_portal.php?token=' . $row['token'];
+                            
+                            $hp_ortu = preg_replace('/[^0-9]/', '', $row['no_hp_ortu'] ?? '');
+                            if (!empty($hp_ortu) && substr($hp_ortu, 0, 1) === '0') {
+                                $hp_ortu = '62' . substr($hp_ortu, 1);
+                            }
+                            $pesan_wa = "Bismillah, Yth. Orang Tua dari " . $row['nama_siswa'] . " (" . $row['kelas'] . ").\n\nTagihan SPP *" . $row['nama_tagihan'] . "* sebesar *Rp " . number_format($row['nominal'], 0, ',', '.') . "* (Sisa: *Rp " . number_format($row['sisa'], 0, ',', '.') . "*).\n\nLink pembayaran:\n" . $link_portal . "\n\nTerima kasih.";
+                            $wa_url = !empty($hp_ortu) ? "https://api.whatsapp.com/send?phone=" . $hp_ortu . "&text=" . urlencode($pesan_wa) : "https://api.whatsapp.com/send?text=" . urlencode($pesan_wa);
                         ?>
                         <tr>
                             <td class="text-muted"><?= $no++ ?></td>
@@ -192,12 +199,15 @@ include 'header.php';
                             </td>
                             <td class="text-end">
                                 <div class="btn-group">
+                                    <a href="<?= $wa_url ?>" target="_blank" class="btn btn-sm btn-success fw-bold" title="Kirim Tagihan ke WhatsApp Orang Tua">
+                                        <i class="bi bi-whatsapp me-1"></i> Kirim ke WA
+                                    </a>
                                     <button class="btn btn-sm btn-outline-secondary" onclick="copyLink('<?= $link_portal ?>')" title="Salin Link Portal Ortu">
-                                        <i class="bi bi-link-45deg"></i> Link Ortu
+                                        <i class="bi bi-copy"></i>
                                     </button>
                                     
                                     <?php if ($row['sisa'] > 0 && ($role == 'admin' || $role == 'bendahara' || $role == 'operator')): ?>
-                                    <button class="btn btn-sm btn-success" onclick='bukaModalBayar(<?= json_encode($row) ?>)' title="Bayar Tunai">
+                                    <button class="btn btn-sm btn-primary" onclick='bukaModalBayar(<?= json_encode($row) ?>)' title="Bayar Tunai">
                                         <i class="bi bi-cash-stack"></i> Bayar
                                     </button>
                                     <?php endif; ?>
