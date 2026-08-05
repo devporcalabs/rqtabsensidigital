@@ -363,15 +363,17 @@ if (empty($initials)) $initials = "AD";
         </div>
         <?php endif; ?>
         
-        <?php if ($role == 'admin' || $role == 'kantin'): ?>
+        <?php if ($role == 'admin' || $role == 'kantin' || $role == 'bendahara'): ?>
         <a class="sidebar-nav-link <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'active' : ''; ?>" data-bs-toggle="collapse" href="#collapseKantin" role="button" aria-expanded="<?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'true' : 'false'; ?>" aria-controls="collapseKantin">
             <i class="bi bi-shop"></i> E-Kantin <i class="bi bi-chevron-down ms-auto" style="font-size: 0.8rem;"></i>
         </a>
         <div class="collapse sidebar-sub-nav <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'show' : ''; ?>" id="collapseKantin">
+            <?php if ($role == 'admin' || $role == 'kantin'): ?>
             <a href="kantin_kasir.php" class="sidebar-nav-link <?= ($current_page == 'kantin_kasir.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
                 <i class="bi bi-calculator"></i> Kasir Kantin
             </a>
-            <?php if ($role == 'admin'): ?>
+            <?php endif; ?>
+            <?php if ($role == 'admin' || $role == 'bendahara'): ?>
             <a href="kantin_topup.php" class="sidebar-nav-link <?= ($current_page == 'kantin_topup.php') ? 'active' : ''; ?>" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 8px;">
                 <i class="bi bi-wallet2"></i> Top Up Saldo
             </a>
@@ -498,18 +500,20 @@ if (empty($initials)) $initials = "AD";
                 </li>
                 <?php endif; ?>
 
-                <?php if ($role == 'admin' || $role == 'kantin'): ?>
+                <?php if ($role == 'admin' || $role == 'kantin' || $role == 'bendahara'): ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?= in_array($current_page, ['kantin_kasir.php', 'kantin_topup.php', 'kantin_laporan.php']) ? 'active' : ''; ?>" href="#" id="navbarDropdownKantin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-shop me-1"></i> E-Kantin
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="navbarDropdownKantin" style="border-radius: 12px; padding: 10px;">
+                        <?php if ($role == 'admin' || $role == 'kantin'): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'kantin_kasir.php') ? 'active bg-primary text-white' : ''; ?>" href="kantin_kasir.php">
                                 <i class="bi bi-calculator me-2"></i> Kasir Kantin
                             </a>
                         </li>
-                        <?php if ($role == 'admin'): ?>
+                        <?php endif; ?>
+                        <?php if ($role == 'admin' || $role == 'bendahara'): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded <?= ($current_page == 'kantin_topup.php') ? 'active bg-primary text-white' : ''; ?>" href="kantin_topup.php">
                                 <i class="bi bi-wallet2 me-2"></i> Top Up Saldo

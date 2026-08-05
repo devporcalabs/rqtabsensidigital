@@ -213,6 +213,7 @@ include 'header.php';
                             <option value="walikelas" <?= ($data_edit['role'] ?? '') == 'walikelas' ? 'selected' : '' ?>>Wali Kelas</option>
                             <option value="piket" <?= ($data_edit['role'] ?? '') == 'piket' ? 'selected' : '' ?>>Guru Piket</option>
                             <option value="kantin" <?= ($data_edit['role'] ?? '') == 'kantin' ? 'selected' : '' ?>>Petugas Kantin</option>
+                            <option value="bendahara" <?= ($data_edit['role'] ?? '') == 'bendahara' ? 'selected' : '' ?>>Bendahara (Keuangan SPP)</option>
                         </select>
                     </div>
                     
@@ -257,11 +258,24 @@ include 'header.php';
                             $no = 1;
                             $q_tampil = mysqli_query($conn, "SELECT * FROM users ORDER BY role ASC, username ASC");
                             while($user = mysqli_fetch_assoc($q_tampil)): 
-                                $b_color = 'bg-secondary';
-                                if($user['role'] == 'admin') $b_color = 'bg-danger';
-                                elseif($user['role'] == 'walikelas') $b_color = 'bg-primary';
-                                elseif($user['role'] == 'piket') $b_color = 'bg-info text-dark';
-                                elseif($user['role'] == 'kantin') $b_color = 'bg-success text-white';
+                                $b_color = 'bg-secondary text-white';
+                                $role_label = strtoupper($user['role']);
+                                if($user['role'] == 'admin') {
+                                    $b_color = 'bg-danger text-white';
+                                    $role_label = 'ADMINISTRATOR';
+                                } elseif($user['role'] == 'walikelas') {
+                                    $b_color = 'bg-primary text-white';
+                                    $role_label = 'WALI KELAS';
+                                } elseif($user['role'] == 'piket') {
+                                    $b_color = 'bg-info text-dark';
+                                    $role_label = 'GURU PIKET';
+                                } elseif($user['role'] == 'kantin') {
+                                    $b_color = 'bg-success text-white';
+                                    $role_label = 'PETUGAS KANTIN';
+                                } elseif($user['role'] == 'bendahara') {
+                                    $b_color = 'bg-warning text-dark';
+                                    $role_label = 'BENDAHARA';
+                                }
                             ?>
                             <tr class="border-bottom border-white">
                                 <td class="text-center small text-muted"><?= $no++ ?></td>
@@ -270,7 +284,7 @@ include 'header.php';
                                     <div class="small text-muted"><?= xss($user['nama_lengkap'] ?: '-') ?></div>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge-role <?= $b_color ?>"><?= strtoupper($user['role']) ?></span>
+                                    <span class="badge-role <?= $b_color ?>"><?= $role_label ?></span>
                                 </td>
                                 <td class="text-center">
                                     <?php if($user['kelas_diampu']): ?>

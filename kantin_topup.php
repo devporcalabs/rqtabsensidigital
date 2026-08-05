@@ -9,8 +9,8 @@ if (!isset($_SESSION['login'])) {
 }
 
 $role = $_SESSION['role'] ?? '';
-if ($role !== 'admin') {
-    die("Akses Ditolak! Fitur Top Up Saldo hanya tersedia untuk Administrator.");
+if ($role !== 'admin' && $role !== 'bendahara') {
+    die("Akses Ditolak! Fitur Top Up Saldo E-Wallet dikelola oleh Administrator dan Bendahara.");
 }
 
 // Security CSRF Token

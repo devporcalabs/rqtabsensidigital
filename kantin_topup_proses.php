@@ -11,8 +11,8 @@ if (!isset($_SESSION['login'])) {
 }
 
 $role = $_SESSION['role'] ?? '';
-if ($role !== 'admin') {
-    echo json_encode(['status' => 'error', 'pesan' => 'Akses ditolak! Fitur Top Up Saldo hanya tersedia untuk Administrator.']);
+if ($role !== 'admin' && $role !== 'bendahara') {
+    echo json_encode(['status' => 'error', 'pesan' => 'Akses ditolak! Fitur Top Up Saldo dikelola oleh Administrator dan Bendahara.']);
     exit;
 }
 

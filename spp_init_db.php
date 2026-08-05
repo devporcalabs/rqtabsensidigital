@@ -81,6 +81,9 @@ if (!function_exists('init_spp_tables')) {
             @mysqli_query($conn, $q);
         }
 
+        // Pastikan ENUM role di tabel users mencakup 'bendahara'
+        @mysqli_query($conn, "ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin','walikelas','piket','kantin','bendahara') NOT NULL DEFAULT 'walikelas'");
+
         $check_setting = @mysqli_query($conn, "SELECT COUNT(*) as total FROM spp_pengaturan");
         if ($check_setting) {
             $r_setting = mysqli_fetch_assoc($check_setting);
