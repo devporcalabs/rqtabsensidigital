@@ -21,6 +21,7 @@ if (isset($_POST['simpan_pengaturan'])) {
     $nama_bank           = trim($_POST['nama_bank']);
     $no_rekening         = trim($_POST['no_rekening']);
     $atas_nama           = trim($_POST['atas_nama']);
+    $no_wa_bendahara     = trim($_POST['no_wa_bendahara']);
     $wa_template_tagihan = trim($_POST['wa_template_tagihan']);
     $wa_template_lunas   = trim($_POST['wa_template_lunas']);
 
@@ -38,12 +39,12 @@ if (isset($_POST['simpan_pengaturan'])) {
 
     $q_check = mysqli_query($conn, "SELECT id FROM spp_pengaturan LIMIT 1");
     if (mysqli_num_rows($q_check) > 0) {
-        $stmt_u = $conn->prepare("UPDATE spp_pengaturan SET nama_bank=?, no_rekening=?, atas_nama=?, qris_image=?, wa_template_tagihan=?, wa_template_lunas=? WHERE id=1");
-        $stmt_u->bind_param("ssssss", $nama_bank, $no_rekening, $atas_nama, $qris_image_name, $wa_template_tagihan, $wa_template_lunas);
+        $stmt_u = $conn->prepare("UPDATE spp_pengaturan SET nama_bank=?, no_rekening=?, atas_nama=?, qris_image=?, no_wa_bendahara=?, wa_template_tagihan=?, wa_template_lunas=? WHERE id=1");
+        $stmt_u->bind_param("sssssss", $nama_bank, $no_rekening, $atas_nama, $qris_image_name, $no_wa_bendahara, $wa_template_tagihan, $wa_template_lunas);
         $stmt_u->execute();
     } else {
-        $stmt_i = $conn->prepare("INSERT INTO spp_pengaturan (nama_bank, no_rekening, atas_nama, qris_image, wa_template_tagihan, wa_template_lunas) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt_i->bind_param("ssssss", $nama_bank, $no_rekening, $atas_nama, $qris_image_name, $wa_template_tagihan, $wa_template_lunas);
+        $stmt_i = $conn->prepare("INSERT INTO spp_pengaturan (nama_bank, no_rekening, atas_nama, qris_image, no_wa_bendahara, wa_template_tagihan, wa_template_lunas) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt_i->bind_param("sssssss", $nama_bank, $no_rekening, $atas_nama, $qris_image_name, $no_wa_bendahara, $wa_template_tagihan, $wa_template_lunas);
         $stmt_i->execute();
     }
 
@@ -105,9 +106,15 @@ include 'header.php';
                         <input type="text" name="no_rekening" class="form-control" value="<?= xss($spp_set['no_rekening'] ?? '1234567890') ?>" required>
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label class="small fw-bold mb-1">Atas Nama Rekening</label>
                         <input type="text" name="atas_nama" class="form-control" value="<?= xss($spp_set['atas_nama'] ?? 'Rumah Quran Temi') ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small fw-bold mb-1"><i class="bi bi-whatsapp text-success me-1"></i> No. WhatsApp Konfirmasi Bendahara</label>
+                        <input type="text" name="no_wa_bendahara" class="form-control" placeholder="Contoh: 628123456789" value="<?= xss($spp_set['no_wa_bendahara'] ?? '') ?>">
+                        <small class="text-muted d-block mt-1">Nomor WhatsApp tujuan orang tua mengirim bukti bayar (format 628...)</small>
                     </div>
 
                     <hr class="my-4">

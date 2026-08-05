@@ -34,53 +34,19 @@ $logo_sekolah = $sekolah['logo_sekolah'] ?? 'porcalabs.ico';
 $q_spp_set = mysqli_query($conn, "SELECT * FROM spp_pengaturan LIMIT 1");
 $spp_set = mysqli_fetch_assoc($q_spp_set);
 
-// --- PROSES UPLOAD BUKTI TRANSFER ---
-$upload_info = null;
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$base_url = $protocol . '://' . $host . rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
 
-if (isset($_POST['upload_bukti'])) {
-    $nominal_bayar = (float)$_POST['nominal_bayar'];
-    $catatan       = trim($_POST['catatan'] ?? '');
-
-    if ($nominal_bayar <= 0) {
-        $upload_info = ['status' => 'danger', 'pesan' => 'Nominal konfirmasi bayar harus lebih dari 0.'];
-    } elseif (!isset($_FILES['bukti_transfer']) || $_FILES['bukti_transfer']['error'] !== UPLOAD_ERR_OK) {
-        $upload_info = ['status' => 'danger', 'pesan' => 'Silakan pilih foto / file bukti transfer terlebih dahulu.'];
-    } else {
-        $file_tmp = $_FILES['bukti_transfer']['tmp_name'];
-        $file_name = $_FILES['bukti_transfer']['name'];
-        $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
-        if (!in_array($ext, $allowed)) {
-            $upload_info = ['status' => 'danger', 'pesan' => 'Format file tidak didukung! Gunakan format JPG, PNG, atau PDF.'];
-        } else {
-            // Buat direktori folder img/bukti_spp jika belum ada
-            $dir_target = __DIR__ . '/img/bukti_spp/';
-            if (!is_dir($dir_target)) {
-                mkdir($dir_target, 0777, true);
-            }
-
-            $nama_baru = 'bukti_' . date('Ymd_His') . '_' . rand(100, 999) . '.' . $ext;
-            $dest = $dir_target . $nama_baru;
-
-            if (move_uploaded_file($file_tmp, $dest)) {
-                $no_trx = 'TRF-' . date('Ymd') . '-' . sprintf('%04d', rand(1, 9999));
-                $metode = $_POST['metode'] ?? 'Transfer';
-
-                $stmt_p = $conn->prepare("INSERT INTO spp_pembayaran (nomor_transaksi, tagihan_id, nis, metode, nominal, bukti_transfer, status_verifikasi, catatan) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?)");
-                $stmt_p->bind_param("sissdss", $no_trx, $tagihan['id'], $tagihan['nis'], $metode, $nominal_bayar, $nama_baru, $catatan);
-                $stmt_p->execute();
-
-                $upload_info = [
-                    'status' => 'success',
-                    'pesan' => 'Alhamdulillah! Bukti konfirmasi pembayaran berhasil dikirim. Petugas / Bendahara akan memverifikasi pembayaran Anda.'
-                ];
-            } else {
-                $upload_info = ['status' => 'danger', 'pesan' => 'Gagal mengunggah file ke server. Coba lagi.'];
-            }
-        }
-    }
+$target_wa = preg_replace('/[^0-9]/', '', $spp_set['no_wa_bendahara'] ?? '');
+if (!empty($target_wa) && substr($target_wa, 0, 1) === '0') {
+    $target_wa = '62' . substr($target_wa, 1);
 }
+
+$wa_confirm_msg = "Bismillah, Yth. Bendahara / Admin " . $nama_sekolah . ".\n\nSaya Orang Tua dari *" . $tagihan['nama_siswa'] . "* (Kelas: " . $tagihan['kelas'] . ").\n\nIngin mengonfirmasi pembayaran tagihan SPP *" . $tagihan['nama_tagihan'] . "* sebesar *Rp " . number_format($tagihan['sisa'], 0, ',', '.') . "*.\n\nTautan Tagihan:\n" . $base_url . "/spp_portal.php?token=" . $token . "\n\n*(Foto bukti bayar terlampir)*.";
+$wa_confirm_url = !empty($target_wa) ? "https://api.whatsapp.com/send?phone=" . $target_wa . "&text=" . urlencode($wa_confirm_msg) : "https://api.whatsapp.com/send?text=" . urlencode($wa_confirm_msg);
+
+$upload_info = null;
 
 // Ambil riwayat pembayaran tagihan ini
 $stmt_history = $conn->prepare("SELECT * FROM spp_pembayaran WHERE tagihan_id=? ORDER BY id DESC");
@@ -119,7 +85,7 @@ $q_history = $stmt_history->get_result();
         </div>
 
         <div class="p-4">
-            <?php if ($upload_info): ?>
+            <?php if (!empty($upload_info)): ?>
                 <div class="alert alert-<?= $upload_info['status'] ?> rounded-4 mb-4">
                     <?= $upload_info['pesan'] ?>
                 </div>
@@ -215,37 +181,18 @@ $q_history = $stmt_history->get_result();
                     </div>
                 </div>
 
-                <!-- Form Upload Bukti Transfer -->
-                <div class="mt-4 p-4 border rounded-4 bg-light">
-                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-cloud-arrow-up me-2 text-success"></i>Konfirmasi / Upload Bukti Pembayaran</h6>
-                    <form method="POST" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label class="small fw-bold mb-1">Metode Pembayaran</label>
-                            <select name="metode" class="form-select">
-                                <option value="Transfer">Transfer Bank</option>
-                                <option value="QRIS">QRIS Statis</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="small fw-bold mb-1">Nominal yang Ditransfer (Rp)</label>
-                            <input type="number" name="nominal_bayar" class="form-control fw-bold" value="<?= $tagihan['sisa'] ?>" max="<?= $tagihan['sisa'] ?>" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="small fw-bold mb-1">Foto Bukti Transfer (JPG, PNG, PDF)</label>
-                            <input type="file" name="bukti_transfer" class="form-control" accept="image/*,.pdf" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="small fw-bold mb-1">Catatan Tambahan (Opsional)</label>
-                            <input type="text" name="catatan" class="form-control" placeholder="Misal: Transfer via BCA atas nama Fulan">
-                        </div>
-
-                        <button type="submit" name="upload_bukti" class="btn btn-success btn-lg w-100 rounded-pill fw-bold shadow-sm">
-                            <i class="bi bi-send-fill me-1"></i> Kirim Konfirmasi Pembayaran
-                        </button>
-                    </form>
+                <!-- Konfirmasi Pembayaran via WhatsApp Direct -->
+                <div class="mt-4 p-4 border rounded-4 bg-success bg-opacity-10 border-success border-opacity-25 text-center">
+                    <div class="mb-2">
+                        <i class="bi bi-whatsapp text-success display-4"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Konfirmasi Pembayaran via WhatsApp</h6>
+                    <p class="small text-muted mb-3" style="max-width: 480px; margin: 0 auto;">
+                        Setelah melakukan transfer bank atau scan QRIS, silakan kirimkan foto/tangkapan layar bukti transfer Anda langsung ke WhatsApp Bendahara Sekolah.
+                    </p>
+                    <a href="<?= $wa_confirm_url ?>" target="_blank" class="btn btn-success btn-lg rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-whatsapp me-2"></i> Kirim Bukti Bayar via WhatsApp
+                    </a>
                 </div>
             </div>
             <?php endif; ?>

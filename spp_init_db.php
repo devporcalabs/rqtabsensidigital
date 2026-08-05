@@ -62,6 +62,7 @@ if (!function_exists('init_spp_tables')) {
                 `no_rekening` VARCHAR(50) DEFAULT '1234567890',
                 `atas_nama` VARCHAR(100) DEFAULT 'Rumah Quran Temi',
                 `qris_image` VARCHAR(255) DEFAULT 'qris_default.png',
+                `no_wa_bendahara` VARCHAR(30) DEFAULT '',
                 `wa_template_tagihan` TEXT,
                 `wa_template_lunas` TEXT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
@@ -83,6 +84,12 @@ if (!function_exists('init_spp_tables')) {
 
         // Pastikan ENUM role di tabel users mencakup 'bendahara'
         @mysqli_query($conn, "ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin','walikelas','piket','kantin','bendahara') NOT NULL DEFAULT 'walikelas'");
+        
+        // Pastikan kolom no_wa_bendahara ada pada tabel spp_pengaturan
+        $check_col = @mysqli_query($conn, "SHOW COLUMNS FROM spp_pengaturan LIKE 'no_wa_bendahara'");
+        if ($check_col && mysqli_num_rows($check_col) == 0) {
+            @mysqli_query($conn, "ALTER TABLE `spp_pengaturan` ADD COLUMN `no_wa_bendahara` VARCHAR(30) DEFAULT ''");
+        }
 
         $check_setting = @mysqli_query($conn, "SELECT COUNT(*) as total FROM spp_pengaturan");
         if ($check_setting) {
