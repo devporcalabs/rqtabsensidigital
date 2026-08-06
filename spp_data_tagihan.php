@@ -47,6 +47,18 @@ if (isset($_POST['bayar_tunai'])) {
     }
 }
 
+// --- PROSES KOSONGKAN DATA TAGIHAN & PEMBAYARAN SPP ---
+if (isset($_POST['kosongkan_tagihan']) && ($role == 'admin' || $role == 'bendahara')) {
+    mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 0;");
+    mysqli_query($conn, "TRUNCATE TABLE spp_pembayaran");
+    mysqli_query($conn, "TRUNCATE TABLE spp_tagihan");
+    mysqli_query($conn, "TRUNCATE TABLE spp_log_notifikasi");
+    mysqli_query($conn, "SET FOREIGN_KEY_CHECKS = 1;");
+
+    echo "<script>alert('Seluruh data tagihan dan riwayat pembayaran SPP telah berhasil dikosongkan!'); window.location='spp_data_tagihan.php';</script>";
+    exit;
+}
+
 // --- FILTER DATA ---
 $f_kelas  = trim($_GET['kelas'] ?? '');
 $f_status = trim($_GET['status'] ?? '');
@@ -71,6 +83,12 @@ if (!empty($f_q)) {
 
 $sql .= " ORDER BY t.id DESC";
 $q_tagihan = mysqli_query($conn, $sql);
+$tagihan_list = [];
+if ($q_tagihan) {
+    while ($r_tag = mysqli_fetch_assoc($q_tagihan)) {
+        $tagihan_list[] = $r_tag;
+    }
+}
 
 // Opsi list kelas untuk filter
 $q_kelas_list = mysqli_query($conn, "SELECT nama_kelas FROM kelas ORDER BY nama_kelas ASC");
@@ -169,6 +187,9 @@ include 'header.php';
         </div>
         <?php if ($role == 'admin' || $role == 'bendahara'): ?>
         <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-danger rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalKosongkan">
+                <i class="bi bi-trash3 me-1"></i> Kosongkan Tagihan
+            </button>
             <a href="spp_generate_tagihan.php" class="btn btn-primary rounded-pill px-4 fw-bold">
                 <i class="bi bi-magic me-1"></i> Generate Tagihan
             </a>
@@ -208,8 +229,8 @@ include 'header.php';
         </form>
     </div>
 
-    <!-- Data Table -->
-    <div class="card-custom shadow-sm">
+    <!-- Desktop Data Table (d-none d-md-block) -->
+    <div class="card-custom shadow-sm d-none d-md-block">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 table-tagihan">
                 <thead>
@@ -226,8 +247,8 @@ include 'header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (mysqli_num_rows($q_tagihan) > 0): $no=1; ?>
-                        <?php while ($row = mysqli_fetch_assoc($q_tagihan)): 
+                    <?php if (!empty($tagihan_list)): $no=1; ?>
+                        <?php foreach ($tagihan_list as $row): 
                             $badge_color = 'bg-secondary';
                             if ($row['status'] == 'Lunas') $badge_color = 'bg-success';
                             elseif ($row['status'] == 'Sebagian') $badge_color = 'bg-warning text-dark';
@@ -284,7 +305,7 @@ include 'header.php';
                                 </div>
                             </td>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <tr><td colspan="9" class="text-center py-5 text-muted">Data tagihan tidak ditemukan.</td></tr>
                     <?php endif; ?>
@@ -292,6 +313,74 @@ include 'header.php';
             </table>
         </div>
     </div>
+
+    <!-- Mobile Smartphone Cards (d-block d-md-none) -->
+    <div class="d-block d-md-none">
+        <?php if (!empty($tagihan_list)): ?>
+            <?php foreach ($tagihan_list as $row): 
+                $badge_color = 'bg-secondary';
+                if ($row['status'] == 'Lunas') $badge_color = 'bg-success';
+                elseif ($row['status'] == 'Sebagian') $badge_color = 'bg-warning text-dark';
+                elseif ($row['status'] == 'Belum Bayar') $badge_color = 'bg-danger';
+                
+                $link_portal = $base_url . '/spp_portal.php?token=' . $row['token'];
+                
+                $hp_ortu = preg_replace('/[^0-9]/', '', $row['no_hp_ortu'] ?? '');
+                if (!empty($hp_ortu) && substr($hp_ortu, 0, 1) === '0') {
+                    $hp_ortu = '62' . substr($hp_ortu, 1);
+                }
+                $pesan_wa = "Bismillah, Yth. Orang Tua dari " . $row['nama_siswa'] . " (" . $row['kelas'] . ").\n\nTagihan SPP *" . $row['nama_tagihan'] . "* sebesar *Rp " . number_format($row['nominal'], 0, ',', '.') . "* (Sisa: *Rp " . number_format($row['sisa'], 0, ',', '.') . "*).\n\nLink pembayaran:\n" . $link_portal . "\n\nTerima kasih.";
+                $wa_url = !empty($hp_ortu) ? "https://api.whatsapp.com/send?phone=" . $hp_ortu . "&text=" . urlencode($pesan_wa) : "https://api.whatsapp.com/send?text=" . urlencode($pesan_wa);
+            ?>
+            <div class="card mb-3 border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 <?= $row['status'] == 'Lunas' ? 'border-success' : ($row['status'] == 'Sebagian' ? 'border-warning' : 'border-danger') ?>">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <strong class="text-dark fs-6 d-block mb-1"><?= xss($row['nama_siswa']) ?></strong>
+                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                            <span class="badge bg-light text-dark border">NIS: <?= xss($row['nis']) ?></span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"><?= xss($row['kelas']) ?></span>
+                        </div>
+                    </div>
+                    <span class="badge <?= $badge_color ?> bg-opacity-10 text-<?= $row['status'] == 'Lunas' ? 'success' : ($row['status'] == 'Sebagian' ? 'warning' : 'danger') ?> fw-bold px-3 py-2 rounded-pill">
+                        <?= $row['status'] ?>
+                    </span>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 mb-3 small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Tagihan:</span>
+                        <strong class="text-dark"><?= xss($row['nama_tagihan']) ?></strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Nominal:</span>
+                        <span class="fw-bold text-dark">Rp <?= number_format($row['nominal'], 0, ',', '.') ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Sisa Tagihan:</span>
+                        <span class="fw-bold text-danger">Rp <?= number_format($row['sisa'], 0, ',', '.') ?></span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="<?= $wa_url ?>" target="_blank" class="btn btn-success btn-sm flex-fill rounded-pill fw-bold py-2 d-flex align-items-center justify-content-center">
+                        <i class="bi bi-whatsapp me-1 fs-6"></i> Kirim WA
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 d-flex align-items-center justify-content-center" onclick="copyLink('<?= $link_portal ?>')">
+                        <i class="bi bi-copy me-1"></i> Copy
+                    </button>
+                    <?php if ($row['sisa'] > 0 && ($role == 'admin' || $role == 'bendahara' || $role == 'operator')): ?>
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 py-2 d-flex align-items-center justify-content-center" onclick='bukaModalBayar(<?= json_encode($row) ?>)'>
+                        <i class="bi bi-wallet2 me-1"></i> Bayar
+                    </button>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="card p-4 text-center text-muted rounded-4 bg-white shadow-sm border-0">Data tagihan tidak ditemukan.</div>
+        <?php endif; ?>
+    </div>
+</div>
 </div>
 
 <!-- Modal Input Pembayaran Tunai -->
@@ -334,6 +423,34 @@ include 'header.php';
         </div>
     </div>
 </div>
+
+<!-- Modal Confirm Kosongkan Tagihan -->
+<?php if ($role == 'admin' || $role == 'bendahara'): ?>
+<div class="modal fade" id="modalKosongkan" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <form method="POST">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Kosongkan Data Tagihan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="text-muted mb-3">
+                        Apakah Anda yakin ingin <strong>menghapus/mengosongkan seluruh data tagihan siswa</strong> dan riwayat pembayaran SPP?
+                    </p>
+                    <div class="alert alert-warning small rounded-3 mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Tindakan ini tidak dapat dibatalkan. Seluruh data tagihan akan di-reset (0 record).
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" name="kosongkan_tagihan" class="btn btn-danger rounded-pill px-4 fw-bold">Ya, Kosongkan Tagihan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>

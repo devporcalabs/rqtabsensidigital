@@ -16,8 +16,12 @@ if(!isset($_SESSION['login'])){
     exit;
 }
 
-$role = $_SESSION['role'];
-$nama_user = $_SESSION['nama'];
+$role = strtolower(trim($_SESSION['role'] ?? ''));
+$nama_user = $_SESSION['nama'] ?? '';
+
+if ($role !== 'admin' && $role !== 'bendahara') {
+    die("<div style='text-align:center; padding:50px; font-family:sans-serif;'><h2>Akses Ditolak</h2><p>Laporan Guru hanya dapat diakses oleh Administrator dan Bendahara.</p></div>");
+}
 
 // --- 2. AMBIL PENGATURAN ---
 $stmt_set = $conn->prepare("SELECT * FROM pengaturan WHERE id = 1");

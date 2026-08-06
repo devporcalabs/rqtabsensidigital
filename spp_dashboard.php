@@ -6,6 +6,10 @@ include_once 'spp_init_db.php';
 if (!isset($_SESSION['login'])) { header("location: login.php"); exit; }
 $role = strtolower(trim($_SESSION['role'] ?? ''));
 
+if ($role !== 'admin' && $role !== 'bendahara') {
+    die("<div style='text-align:center; padding:50px; font-family:sans-serif;'><h2>Akses Ditolak</h2><p>Dashboard SPP hanya dapat diakses oleh Administrator dan Bendahara.</p></div>");
+}
+
 function xss($data) {
     return htmlspecialchars($data ?? '', ENT_QUOTES, 'UTF-8');
 }

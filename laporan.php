@@ -201,6 +201,7 @@ include 'header.php';
 <div class="container py-2">
 
     <!-- Tab Navigasi Laporan Siswa & Guru -->
+    <?php if ($role == 'admin' || $role == 'bendahara'): ?>
     <div class="d-flex justify-content-center mb-4">
         <ul class="nav nav-pills bg-white p-1 rounded-pill shadow-sm">
             <li class="nav-item">
@@ -215,6 +216,7 @@ include 'header.php';
             </li>
         </ul>
     </div>
+    <?php endif; ?>
 
     <div class="glass-card p-4 mb-4">
         <form method="GET">
