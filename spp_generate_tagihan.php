@@ -22,6 +22,7 @@ if (isset($_POST['generate'])) {
     $target_siswa     = $_POST['target_siswa'] ?? 'semua'; // 'semua', 'kelas', 'nis'
     $kelas_pilih      = $_POST['kelas'] ?? '';
     $nis_pilih        = trim($_POST['nis'] ?? '');
+    $kirim_wa_aktif   = isset($_POST['kirim_wa']) ? 1 : 0;
     $opsi_jadwal      = $_POST['opsi_jadwal'] ?? 'sekarang';
     $custom_datetime  = $_POST['custom_datetime'] ?? '';
 
@@ -37,22 +38,16 @@ if (isset($_POST['generate'])) {
         // Tentukan jadwal pengingat (scheduled_at)
         $scheduled_at = date('Y-m-d H:i:s');
         $label_jadwal = "Sekarang";
-        $jt_date = $jt['jatuh_tempo'] ?? date('Y-m-d');
 
-        if ($opsi_jadwal === 'h_minus_3') {
-            $calc_time = strtotime($jt_date . ' -3 days 08:00:00');
-            $scheduled_at = ($calc_time > time()) ? date('Y-m-d H:i:s', $calc_time) : date('Y-m-d H:i:s');
-            $label_jadwal = "H-3 Jatuh Tempo (" . date('d M Y H:i', strtotime($scheduled_at)) . " WIB)";
-        } elseif ($opsi_jadwal === 'hari_h') {
-            $calc_time = strtotime($jt_date . ' 08:00:00');
-            $scheduled_at = ($calc_time > time()) ? date('Y-m-d H:i:s', $calc_time) : date('Y-m-d H:i:s');
-            $label_jadwal = "Hari H Jatuh Tempo (" . date('d M Y H:i', strtotime($scheduled_at)) . " WIB)";
+        if (!$kirim_wa_aktif) {
+            $scheduled_at = null;
+            $label_jadwal = "Tidak Dikirim";
         } elseif ($opsi_jadwal === 'custom' && !empty($custom_datetime)) {
             $scheduled_at = date('Y-m-d H:i:s', strtotime($custom_datetime));
             $label_jadwal = date('d M Y H:i', strtotime($scheduled_at)) . " WIB";
-        } elseif ($opsi_jadwal === 'none') {
-            $scheduled_at = null;
-            $label_jadwal = "Tidak Dikirim";
+        } else {
+            $scheduled_at = date('Y-m-d H:i:s');
+            $label_jadwal = "Sekarang";
         }
 
         // Query ambil daftar siswa target
@@ -105,8 +100,8 @@ if (isset($_POST['generate'])) {
                 $created++;
                 $tagihan_id = $conn->insert_id;
 
-                // Jika Opsi Jadwal dipilih (bukan 'none') dan siswa memiliki no HP
-                if ($opsi_jadwal !== 'none' && !empty($s['no_hp'])) {
+                // Jika Opsi Pengingat WA aktif dan siswa memiliki no HP
+                if ($kirim_wa_aktif && !empty($s['no_hp'])) {
                     $link_portal = $base_url . '/spp_portal.php?token=' . $token;
 
                     $pesan = str_replace(
@@ -277,73 +272,54 @@ include 'header.php';
 
                     <!-- 3. PILIH JADWAL PENGINGAT WHATSAPP -->
                     <div class="card border-0 bg-light rounded-4 p-3 mb-4 shadow-sm">
-                        <label class="form-label fw-bold mb-1 text-success">
-                            <i class="bi bi-whatsapp me-1"></i> 3. Pilih Jadwal Pengingat WhatsApp Otomatis
-                        </label>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0 text-success fs-6">
+                                <i class="bi bi-whatsapp me-1"></i> 3. Pilih Jadwal Pengingat WhatsApp Otomatis
+                            </label>
+                            <div class="form-check form-switch fs-5 mb-0">
+                                <input class="form-check-input" type="checkbox" name="kirim_wa" id="kirim_wa_toggle" value="1" checked onchange="toggleWaSection(this.checked)">
+                            </div>
+                        </div>
                         <p class="small text-muted mb-3">
-                            Tentukan waktu pengiriman pesan WhatsApp pengingat tagihan ke orang tua murid. Pengiriman akan diproses dalam antrean dengan <strong>jeda 30 detik per pesan</strong> untuk proteksi anti-spam.
+                            Pilih jadwal pengiriman pesan tagihan ke orang tua murid. Pengiriman diproses dalam antrean dengan <strong>jeda 30 detik per pesan</strong> untuk proteksi anti-spam.
                         </p>
 
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-6 col-12">
-                                <div class="form-check card p-3 h-100 border-1 schedule-card shadow-xs">
-                                    <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_sekarang" value="sekarang" checked onclick="toggleJadwal('sekarang')">
-                                    <label class="form-check-label fw-bold d-block" for="jadwal_sekarang">
-                                        ⚡ Kirim Sekarang (Antrean Bertahap)
-                                        <small class="d-block text-muted fw-normal mt-1">Pesan langsung dimasukkan ke antrean pengiriman hari ini.</small>
-                                    </label>
+                        <div id="wa-options-wrapper">
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6 col-12">
+                                    <div class="form-check card p-3 h-100 border-1 schedule-card shadow-xs">
+                                        <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_sekarang" value="sekarang" checked onclick="toggleJadwal('sekarang')">
+                                        <label class="form-check-label fw-bold d-block" for="jadwal_sekarang">
+                                            ⚡ Kirim Sekarang (Antrean Bertahap)
+                                            <small class="d-block text-muted fw-normal mt-1">Pesan langsung dimasukkan ke antrean pengiriman hari ini.</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-12">
+                                    <div class="form-check card p-3 h-100 border-1 schedule-card shadow-xs">
+                                        <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_custom" value="custom" onclick="toggleJadwal('custom')">
+                                        <label class="form-check-label fw-bold d-block" for="jadwal_custom">
+                                            🗓️ Tentukan Tanggal & Jam Sendiri
+                                            <small class="d-block text-muted fw-normal mt-1">Pilih tanggal dan jam pengiriman sesuai kebutuhan Anda.</small>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-6 col-12">
-                                <div class="form-check card p-3 h-100 border-1 schedule-card shadow-xs">
-                                    <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_h3" value="h_minus_3" onclick="toggleJadwal('h_minus_3')">
-                                    <label class="form-check-label fw-bold d-block" for="jadwal_h3">
-                                        📅 H-3 Sebelum Jatuh Tempo
-                                        <small class="d-block text-muted fw-normal mt-1">Otomatis dihitung 3 hari sebelum batas tanggal jatuh tempo (Jam 08:00 WIB).</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-12">
-                                <div class="form-check card p-3 h-100 border-1 schedule-card shadow-xs">
-                                    <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_h0" value="hari_h" onclick="toggleJadwal('hari_h')">
-                                    <label class="form-check-label fw-bold d-block" for="jadwal_h0">
-                                        ⏰ Pada Hari Jatuh Tempo (H-0)
-                                        <small class="d-block text-muted fw-normal mt-1">Dikirim tepat pada tanggal jatuh tempo tagihan (Jam 08:00 WIB).</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-12">
-                                <div class="form-check card p-3 h-100 border-1 schedule-card shadow-xs">
-                                    <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_custom" value="custom" onclick="toggleJadwal('custom')">
-                                    <label class="form-check-label fw-bold d-block" for="jadwal_custom">
-                                        🗓️ Tentukan Tanggal & Jam Sendiri
-                                        <small class="d-block text-muted fw-normal mt-1">Pilih tanggal dan jam pengiriman sesuai jadwal Anda.</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-check card p-2 px-3 border-1 schedule-card">
-                                    <input class="form-check-input" type="radio" name="opsi_jadwal" id="jadwal_none" value="none" onclick="toggleJadwal('none')">
-                                    <label class="form-check-label fw-semibold text-muted" for="jadwal_none">
-                                        🚫 Jangan Kirim Notifikasi WhatsApp (Hanya buat data tagihan)
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Input Custom Datetime Picker -->
-                        <div id="box-custom-datetime" style="display: none;" class="p-3 bg-white rounded-3 border border-primary mb-2">
-                            <label class="form-label small fw-bold text-primary mb-1">
-                                <i class="bi bi-calendar-event me-1"></i> Tentukan Tanggal & Jam Pengiriman:
-                            </label>
-                            <input type="datetime-local" name="custom_datetime" class="form-control" value="<?= date('Y-m-d\TH:i', strtotime('+1 day 08:00')) ?>">
-                            <small class="text-muted">Pesan akan mulai dikirim pada waktu yang ditentukan.</small>
-                        </div>
+                            <!-- Input Custom Datetime Picker -->
+                            <div id="box-custom-datetime" style="display: none;" class="p-3 bg-white rounded-3 border border-primary mb-3">
+                                <label class="form-label small fw-bold text-primary mb-1">
+                                    <i class="bi bi-calendar-event me-1"></i> Tentukan Tanggal & Jam Pengiriman:
+                                </label>
+                                <input type="datetime-local" name="custom_datetime" class="form-control" value="<?= date('Y-m-d\TH:i', strtotime('+1 day 08:00')) ?>">
+                                <small class="text-muted">Pesan akan mulai dikirim pada waktu yang ditentukan.</small>
+                            </div>
 
-                        <div class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center rounded-3">
-                            <i class="bi bi-shield-check fs-5 me-2 text-primary"></i>
-                            <div>
-                                <strong>Proteksi Anti-Spam Aktif:</strong> Setiap pesan WhatsApp akan dikirim satu per satu dengan jeda aman <strong>30 detik</strong> agar terhindar dari pemblokiran oleh WhatsApp / Gateway.
+                            <div class="alert alert-info py-2 px-3 mb-0 small d-flex align-items-center rounded-3">
+                                <i class="bi bi-shield-check fs-5 me-2 text-primary"></i>
+                                <div>
+                                    <strong>Proteksi Anti-Spam Aktif:</strong> Setiap pesan WhatsApp akan dikirim bertahap satu per satu dengan jeda aman <strong>30 detik</strong> agar terhindar dari pemblokiran.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -431,8 +407,8 @@ function toggleJadwal(val) {
     document.getElementById('box-custom-datetime').style.display = (val === 'custom') ? 'block' : 'none';
 }
 
-function updateJtInfo() {
-    // Helper jika ingin menyesuaikan tanggal dinamis
+function toggleWaSection(isChecked) {
+    document.getElementById('wa-options-wrapper').style.display = isChecked ? 'block' : 'none';
 }
 
 // =========================================================================
