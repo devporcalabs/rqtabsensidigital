@@ -61,9 +61,17 @@ $result = mysqli_query($conn, $query);
                             <tr>
                                 <td class="ps-4 small text-muted">
                                     <?= date('d/m H:i:s', strtotime($row['created_at'])) ?>
+                                    <?php if (!empty($row['scheduled_at']) && strtotime($row['scheduled_at']) > strtotime($row['created_at'])): ?>
+                                        <div class="mt-1"><span class="badge bg-light text-primary border" style="font-size: 0.7rem;"><i class="bi bi-clock me-1"></i> Jadwal: <?= date('d/m H:i', strtotime($row['scheduled_at'])) ?></span></div>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
-                                    <div class="fw-bold"><?= $row['nama_siswa'] ?? 'Umum/Luar' ?></div>
+                                    <div class="fw-bold d-flex align-items-center gap-1">
+                                        <?= $row['nama_siswa'] ?? 'Umum/Luar' ?>
+                                        <?php if (($row['tipe'] ?? '') === 'spp_tagihan'): ?>
+                                            <span class="badge bg-info-subtle text-info border border-info px-2 py-0" style="font-size: 0.65rem;">SPP</span>
+                                        <?php endif; ?>
+                                    </div>
                                     <div class="small text-muted"><?= $row['target'] ?></div>
                                 </td>
                                 <td class="small" style="max-width: 300px;">

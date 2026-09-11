@@ -91,6 +91,20 @@ if (!function_exists('init_spp_tables')) {
             @mysqli_query($conn, "ALTER TABLE `spp_pengaturan` ADD COLUMN `no_wa_bendahara` VARCHAR(30) DEFAULT ''");
         }
 
+        // Pastikan kolom antrean terjadwal ada pada wa_queue
+        $cols_wa = [
+            'tagihan_id'   => 'INT NULL AFTER `nis`',
+            'tipe'         => "VARCHAR(50) DEFAULT 'absensi' AFTER `tagihan_id`",
+            'scheduled_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP AFTER `status`',
+            'sent_at'      => 'DATETIME NULL AFTER `status`'
+        ];
+        foreach ($cols_wa as $col => $def) {
+            $c_check = @mysqli_query($conn, "SHOW COLUMNS FROM `wa_queue` LIKE '$col'");
+            if ($c_check && mysqli_num_rows($c_check) == 0) {
+                @mysqli_query($conn, "ALTER TABLE `wa_queue` ADD COLUMN `$col` $def");
+            }
+        }
+
         $check_setting = @mysqli_query($conn, "SELECT COUNT(*) as total FROM spp_pengaturan");
         if ($check_setting) {
             $r_setting = mysqli_fetch_assoc($check_setting);

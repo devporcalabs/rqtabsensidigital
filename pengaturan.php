@@ -65,8 +65,9 @@ if(isset($_POST['test_wa'])){
     $res = sendWa($target, $pesan, $token, $url);
     
     $result = json_decode($res, true);
-    if (isset($result['status']) && $result['status'] == true) {
-        $user_msg = "Pesan WA Terkirim! Tes koneksi Fonnte Berhasil.";
+    if ((isset($result['status']) && $result['status'] == true) || (isset($result['is_success']) && $result['is_success'] == true)) {
+        $gateway_name = (strpos($url, 'sidobe.com') !== false) ? 'Sidobe' : ((strpos($url, 'fonnte.com') !== false) ? 'Fonnte' : 'WhatsApp Gateway');
+        $user_msg = "Pesan WA Terkirim! Tes koneksi $gateway_name Berhasil.";
     } else {
         $reason = isset($result['reason']) ? $result['reason'] : (isset($result['detail']) ? $result['detail'] : (isset($result['message']) ? $result['message'] : "Periksa Token & URL API."));
         $user_msg = "Pesan WA Gagal! " . addslashes($reason);
@@ -332,13 +333,16 @@ include 'header.php';
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">WA Gateway API Key</label>
-                            <input type="password" name="wa_token" class="form-control" value="<?= xss($data['wa_token']) ?>">
+                            <label class="form-label">WA Gateway API Key / Secret Key</label>
+                            <input type="password" name="wa_token" class="form-control" value="<?= xss($data['wa_token']) ?>" placeholder="Secret Key Sidobe / Token Fonnte">
                         </div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">API Endpoint URL</label>
-                        <input type="text" name="wa_api_url" class="form-control" value="<?= xss($data['wa_api_url']) ?>">
+                        <input type="text" name="wa_api_url" class="form-control" value="<?= xss($data['wa_api_url']) ?>" placeholder="https://api.sidobe.com/wa/v1/send-message">
+                        <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">
+                            Sidobe: <code>https://api.sidobe.com/wa/v1/send-message</code> | Fonnte: <code>https://api.fonnte.com/send</code>
+                        </small>
                     </div>
 
                     <span class="section-title text-info mt-2"><i class="bi bi-telegram"></i> Konfigurasi Telegram API</span>
